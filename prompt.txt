@@ -1,0 +1,51 @@
+Write a Node.js application using `whatsapp-web.js`, `qrcode-terminal`, and `rss-parser` that monitors a list of YouTube channels for new videos and broadcasts them to assigned WhatsApp groups at a configurable interval.
+
+### Requirements & Specifications:
+
+1. Setup & Authentication:
+   - Use `whatsapp-web.js` with `LocalAuth` so session data persists across restarts.
+   - Use `qrcode-terminal` to render the QR code in the terminal for initial authentication.
+
+2. Configuration (`config.json`):
+   Create a JSON structure containing:
+   - `checkIntervalMinutes`: Number (e.g., 15) to specify how often the bot checks YouTube feeds.
+   - `messageTemplate`: String template supporting variables (e.g., "MSG MSG MSG MSG {%VAR_URL%}").
+   - `channels`: An array of YouTube channel objects structured as follows:
+     ```json
+     [
+       {
+         "channelName": "Example Channel",
+         "youtubeChannelId": "UCxxxxxx...", // YouTube Channel ID (e.g. UC_x5XG1OV2P6uZZ5FSM9Ttw)
+         "targetGroupJids": [
+           "120363000000000000@g.us",
+           "120363000000000001@g.us"
+         ]
+       }
+     ]
+     ```
+
+3. YouTube Feed Logic:
+   - Construct YouTube RSS Feed URLs dynamically using the channel ID: `https://www.youtube.com/feeds/videos.xml?channel_id={youtubeChannelId}`.
+   - Use `rss-parser` to fetch and parse the feed for each channel.
+
+4. Message Formatting & Conditional Logic:
+   - Create a helper function `formatMessage(template, videoData)`:
+     - Replace `{%VAR_URL%}` with the YouTube video URL (`item.link`).
+     - Support conditional rules based on video metadata (e.g., if title/description contains specific keywords like "#shorts", "live", or custom tags, apply a different template or suffix).
+
+5. Execution & Anti-Ban Flow:
+   - Maintain a local JSON file (`posted_videos.json`) recording posted video IDs per channel to avoid duplicates.
+   - On readiness (`client.on('ready')`), immediately perform a check, then set up recurring execution based on `checkIntervalMinutes`.
+   - For each channel:
+     - Parse the RSS feed and filter out videos already listed in `posted_videos.json`.
+     - For each new video:
+       1. Format the message according to template and conditions.
+       2. Loop over `targetGroupJids` and send the formatted message.
+       3. Wait a random delay (e.g., 3-8 seconds) between group sends to avoid trigger-rate limits.
+       4. Save the new video ID to `posted_videos.json`.
+
+6. Code Structure & Instructions:
+   - Write clean `async/await` code with full `try/catch` error handling so single channel/network failures don't crash the bot.
+   - Include clear instructions on how users can find YouTube Channel IDs and WhatsApp Group JIDs.
+
+Provide the complete `index.js`, sample

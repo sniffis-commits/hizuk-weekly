@@ -1,0 +1,51 @@
+{
+  "checkIntervalMinutes": 15,
+  "sendHistoryOnFirstRun": false,
+  "messageTemplate": "MSG MSG MSG MSG {%VAR_URL%}{%VAR_EXTENDED%}",
+  "shortsTemplate": null,
+  "liveTemplate": null,
+  "shortsSuffix": " ⚡ (#Shorts)",
+  "liveSuffix": " 🔴 (Live/Premiere)",
+  "customKeywordRules": [
+    {
+      "keyword": "giveaway",
+      "suffix": " 🎁 Don't miss the giveaway!"
+    }
+  ],
+  "extendedRules": [
+    {
+      "match": "this week",
+      "text": "\n📚 This week's playlist: {%VAR_PLAYLIST_URL%}",
+      "playlistId": "PLxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    {
+      "match": "new stuff",
+      "text": "\n✨ New stuff playlist: {%VAR_PLAYLIST_URL%}",
+      "playlistId": "PLyyyyyyyyyyyyyyyyyyyyyy"
+    }
+  ],
+  "channels": [
+    {
+      "channelName": "Example Channel",
+      "youtubeChannelId": "UC_x5XG1OV2P6uZZ5FSM9Ttw",
+      "targetGroupJids": [
+        "120363000000000000@g.us",
+        "120363000000000001@g.us"
+      ]
+    },
+    {
+      "channelName": "Rabbi Uri Hanania Elnekave",
+      "youtubeChannelId": "UC2s4RBog6eLOstA_GIMOQrg",
+      "targetGroupJids": [
+        "120363000000000000@g.us"
+      ]
+    },
+    {
+      "channelName": "Rabbi Ovadya Yosef",
+      "youtubeChannelId": "UCp1qY8aM7kY9bOlJ70eEArg",
+      "targetGroupJids": [
+        "120363000000000000@g.us"
+      ]
+    }
+  ]
+}

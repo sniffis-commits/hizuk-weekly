@@ -1,0 +1,7 @@
+node_modules/
+.wwebjs_auth/
+.wwebjs_cache/
+.puppeteer-cache/
+__pycache__/
+posted_videos.json
+test_posted_videos.json
