@@ -1,0 +1,33 @@
+{
+  "checkIntervalMinutes": 15,
+  "sendHistoryOnFirstRun": false,
+  "adminJids": ["15551234567@c.us"],
+  "statusGroupJids": ["120363000000000002@g.us"],
+  "statusHour": 21,
+  "watchdog": { "enabled": true, "restartDelayMs": 5000, "maxRestarts": 5, "alertOnEvents": true },
+  "feedRetries": 2,
+  "maxPostedIdsPerChannel": 500,
+  "humanTiming": { "enabled": true, "msPerChar": 50, "betweenSendsMinMs": 3000, "betweenSendsMaxMs": 8000 },
+  "channels": [
+    {
+      "channelName": "Example Channel",
+      "youtubeChannelId": "UC_x5XG1OV2P6uZZ5FSM9Ttw",
+      "targetGroupJids": [
+        { "jid": "120363000000000000@g.us", "language": "he", "digest": { "enabled": true, "hour": 8 } },
+        { "jid": "120363000000000001@g.us", "language": "en" }
+      ],
+      "languageTemplates": {
+        "he": { "messageTemplate": "{%VAR_TITLE%}\n{%VAR_URL%}" },
+        "en": { "messageTemplate": "New: {%VAR_TITLE%} — {%VAR_URL%}" }
+      },
+      "messageTemplate": "Fallback: {%VAR_URL%}",
+      "maxVideosPerDay": 5,
+      "preferredKeywords": ["פרשת השבוע", "this week"],
+      "excludeKeywords": ["giveaway", "prank"],
+      "quietHours": { "start": "23:00", "end": "07:00" },
+      "extendedRules": [
+        { "match": "פרשת השבוע|this week", "text": "\n📚 {%VAR_PLAYLIST_URL%}", "playlistId": "PLxxxxxxxxxxxxxxxxxxxxxx" }
+      ]
+    }
+  ]
+}

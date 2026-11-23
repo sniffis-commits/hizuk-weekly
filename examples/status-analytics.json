@@ -1,0 +1,15 @@
+{
+  "checkIntervalMinutes": 15,
+  "sendHistoryOnFirstRun": false,
+  "adminJids": ["15551234567@c.us"],
+  "statusGroupJids": ["120363000000000002@g.us"],
+  "statusHour": 21,
+  "channels": [
+    {
+      "channelName": "Example Channel",
+      "youtubeChannelId": "UC_x5XG1OV2P6uZZ5FSM9Ttw",
+      "targetGroupJids": ["120363000000000000@g.us"],
+      "messageTemplate": "{%VAR_TITLE%} {%VAR_URL%}"
+    }
+  ]
+}

@@ -8,6 +8,8 @@ Python/__pycache__/
 posted_videos.json
 daily_counts.json
 digest_queue.json
+status.json
+status_state.json
 bot.log
 bot.log.1
 test_posted_videos.json

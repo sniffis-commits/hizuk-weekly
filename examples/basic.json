@@ -1,0 +1,12 @@
+{
+  "checkIntervalMinutes": 15,
+  "sendHistoryOnFirstRun": false,
+  "channels": [
+    {
+      "channelName": "Example Channel",
+      "youtubeChannelId": "UC_x5XG1OV2P6uZZ5FSM9Ttw",
+      "targetGroupJids": ["120363000000000000@g.us"],
+      "messageTemplate": "🎬 {%VAR_TITLE%}\n{%VAR_URL%}"
+    }
+  ]
+}

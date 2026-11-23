@@ -46,6 +46,141 @@ const parser = new Parser();
 // Set by `node index.js --dry-run`: all logic runs, no state is written.
 let dryRun = false;
 
+// In-memory daily counters for the status/analytics report.
+const stats = {};
+let statsDateKey = null;
+
+function bumpStat(channelId, field, amount = 1) {
+  const key = statsDateKey === todayKey() ? channelId : null;
+  if (!key) return;
+  stats[key] = stats[key] || { seen: 0, sent: 0, skipped: 0, failed: 0, queued: 0 };
+  stats[key][field] = (stats[key][field] || 0) + amount;
+}
+
+function ensureStatsDay() {
+  const key = todayKey();
+  if (statsDateKey !== key) {
+    statsDateKey = key;
+    for (const k of Object.keys(stats)) delete stats[k];
+  }
+}
+
+function getStats() {
+  ensureStatsDay();
+  return stats;
+}
+
+const STATUS_PATH = path.join(__dirname, 'status.json');
+const STATUS_STATE_PATH = path.join(__dirname, 'status_state.json');
+
+/** Build the snapshot consumed by status messages and dashboard.html. */
+function buildStatusReport(config, posted, dailyCounts, now = new Date()) {
+  const counters = getStats();
+  return {
+    generatedAt: now.toISOString(),
+    intervalMinutes: config.checkIntervalMinutes,
+    channels: config.channels.map((ch) => {
+      const id = ch.youtubeChannelId;
+      const last = lastCheckAt(id);
+      const dueIn = Math.max(0, Math.ceil((intervalFor(ch, config) - (Date.now() - last)) / 60000));
+      const c = counters[id] || {};
+      return {
+        name: ch.channelName || id,
+        id,
+        enabled: ch.enabled !== false,
+        targets: normalizeGroups(ch).map((g) => g.jid),
+        posted: (posted[id] || []).length,
+        sentToday: sentTodayCount(id, dailyCounts, now),
+        seenToday: c.seen || 0,
+        skippedToday: c.skipped || 0,
+        failedToday: c.failed || 0,
+        queuedToday: c.queued || 0,
+        quietNow: isQuietTime(ch, config, now),
+        dueInMinutes: dueIn,
+        digest: ch.digest && ch.digest.enabled ? ch.digest.hour ?? 8 : null,
+      };
+    }),
+  };
+}
+
+/** Last-check timestamps are held in a module-level map set by main(). */
+let lastCheckProvider = () => 0;
+function setLastCheckProvider(fn) { lastCheckProvider = fn; }
+function lastCheckAt(id) { return lastCheckProvider(id); }
+
+function writeStatusFile(report, filePath = STATUS_PATH) {
+  if (dryRun) return;
+  fs.writeFileSync(filePath, JSON.stringify(report, null, 2), 'utf-8');
+}
+
+function loadStatusState(filePath = STATUS_STATE_PATH) {
+  try {
+    if (!fs.existsSync(filePath)) return {};
+    return JSON.parse(fs.readFileSync(filePath, 'utf-8').trim() || '{}');
+  } catch (_) {
+    return {};
+  }
+}
+
+function saveStatusState(state, filePath = STATUS_STATE_PATH) {
+  if (dryRun) return;
+  fs.writeFileSync(filePath, JSON.stringify(state, null, 2), 'utf-8');
+}
+
+/** Plain-text version of the report for admin/status-group messages. */
+function formatStatusReport(report) {
+  const lines = [`📊 החיזוק השבועי — ${new Date(report.generatedAt).toLocaleString('he-IL')}`,
+    `עדכון: ${new Date().toISOString()}`, ''];
+  for (const ch of report.channels) {
+    lines.push(
+      `${ch.enabled ? '▶' : '⏸'} ${ch.name}`,
+      `  נשלחו היום: ${ch.sentToday} | בסה"כ: ${ch.posted} | דילוגים: ${ch.skippedToday}`,
+      `  כשלונות: ${ch.failedToday} | בתור: ${ch.queuedToday} | שקט עכשיו: ${ch.quietNow ? 'כן' : 'לא'}`,
+      `  בדיקה הבאה בעוד ~${ch.dueInMinutes} דק' | קבוצות: ${ch.targets.length}${ch.digest !== null ? ` | דייג'סט: ${ch.digest}:00` : ''}`,
+      ''
+    );
+  }
+  return lines.join('\n');
+}
+
+/** Accept a JID string or { jid, language?, messageTemplate?, ... } object. */
+function normalizeGroups(channel) {
+  const raw = Array.isArray(channel && channel.targetGroupJids)
+    ? channel.targetGroupJids
+    : [];
+  return raw.map((entry, index) => {
+    const obj = entry && typeof entry === 'object' ? entry : { jid: entry };
+    return { jid: obj.jid, raw: obj, index };
+  });
+}
+
+/**
+ * Effective settings for one group: channel -> language template -> group
+ * overrides. Group overrides win so a single group can have its own wording
+ * and its own digest schedule while sharing the same channel feed.
+ */
+function groupSettings(channel, group) {
+  const out = { ...(channel || {}) };
+  const lang = group && group.raw && group.raw.language;
+  if (lang && channel && channel.languageTemplates && channel.languageTemplates[lang]) {
+    Object.assign(out, channel.languageTemplates[lang]);
+  }
+  const keys = [
+    'messageTemplate', 'shortsTemplate', 'liveTemplate', 'shortsSuffix',
+    'liveSuffix', 'customKeywordRules', 'extendedRules', 'digest', 'humanTiming',
+  ];
+  if (group && group.raw) {
+    for (const key of keys) {
+      if (Object.prototype.hasOwnProperty.call(group.raw, key)) out[key] = group.raw[key];
+    }
+  }
+  return out;
+}
+
+function digestKey(channelId, jid) {
+  return `${channelId}::${jid}`;
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -762,6 +897,23 @@ function validateConfig(config) {
       warnings.push(`top-level "${key}" is ignored — move messaging settings into each channels[] entry`);
     }
   }
+  const checkDigest = (where, digest) => {
+    if (digest === undefined || digest === null) return;
+    if (typeof digest !== 'object' || Array.isArray(digest)) {
+      warnings.push(`${where}: digest must be an object { enabled, hour, separator? }`);
+      return;
+    }
+    if (digest.enabled !== undefined && typeof digest.enabled !== 'boolean') {
+      warnings.push(`${where}: digest.enabled must be true/false`);
+    }
+    if (digest.hour !== undefined && !(Number.isInteger(digest.hour) && digest.hour >= 0 && digest.hour <= 23)) {
+      warnings.push(`${where}: digest.hour must be 0-23 (default 8)`);
+    }
+    if (digest.separator !== undefined && typeof digest.separator !== 'string') {
+      warnings.push(`${where}: digest.separator must be a string`);
+    }
+  };
+
   // Human timing: global block, then per-channel overrides.
   const checkTiming = (where, timing) => {
     if (!timing || typeof timing !== 'object') return;
@@ -798,6 +950,23 @@ function validateConfig(config) {
   if (config.adminJids !== undefined && !(Array.isArray(config.adminJids) && config.adminJids.every((j) => typeof j === 'string'))) {
     warnings.push('adminJids must be an array of WhatsApp JIDs (strings)');
   }
+  if (config.statusGroupJids !== undefined && !(Array.isArray(config.statusGroupJids) && config.statusGroupJids.every((j) => typeof j === 'string'))) {
+    warnings.push('statusGroupJids must be an array of WhatsApp JIDs (strings)');
+  }
+  if (config.statusHour !== undefined && !(Number.isInteger(config.statusHour) && config.statusHour >= 0 && config.statusHour <= 23)) {
+    warnings.push('statusHour must be 0-23 (default 21)');
+  }
+  if (config.watchdog !== undefined && config.watchdog !== null) {
+    const w = config.watchdog;
+    if (typeof w !== 'object' || Array.isArray(w)) {
+      warnings.push('watchdog must be an object { enabled, restartDelayMs, maxRestarts, alertOnEvents }');
+    } else {
+      if (w.enabled !== undefined && typeof w.enabled !== 'boolean') warnings.push('watchdog.enabled must be true/false');
+      if (w.alertOnEvents !== undefined && typeof w.alertOnEvents !== 'boolean') warnings.push('watchdog.alertOnEvents must be true/false');
+      if (w.restartDelayMs !== undefined && !(typeof w.restartDelayMs === 'number' && w.restartDelayMs >= 0)) warnings.push('watchdog.restartDelayMs must be a non-negative number');
+      if (w.maxRestarts !== undefined && !(Number.isInteger(w.maxRestarts) && w.maxRestarts >= 0)) warnings.push('watchdog.maxRestarts must be a non-negative integer');
+    }
+  }
   (config.channels || []).forEach((ch, i) => {
     if (!ch) return;
     checkTiming(`channels[${i}].humanTiming`, ch.humanTiming);
@@ -814,9 +983,32 @@ function validateConfig(config) {
     } else if (!/^UC[\w-]{16,}$/.test(ch.youtubeChannelId)) {
       warnings.push(`${label}: youtubeChannelId looks invalid: ${ch.youtubeChannelId}`);
     }
-    for (const jid of (ch && ch.targetGroupJids) || []) {
-      if (!/@(g|c)\.us$/.test(jid)) {
-        warnings.push(`${label}: target JID looks invalid: ${jid}`);
+    for (const entry of (ch && ch.targetGroupJids) || []) {
+      const group = entry && typeof entry === 'object' ? entry : { jid: entry };
+      if (!group.jid || !/@(g|c)\.us$/.test(group.jid)) {
+        warnings.push(`${label}: target JID looks invalid: ${JSON.stringify(entry)}`);
+      }
+      if (group.language !== undefined && typeof group.language !== 'string') {
+        warnings.push(`${label}: group language must be a string (e.g. "he" / "en")`);
+      }
+      if (group.language && ch.languageTemplates && !ch.languageTemplates[group.language]) {
+        warnings.push(`${label}: no languageTemplates entry for "${group.language}"`);
+      }
+      checkDigest(`${label} target ${group.jid}`, group.digest);
+    }
+    if (ch.languageTemplates !== undefined) {
+      if (!ch.languageTemplates || typeof ch.languageTemplates !== 'object' || Array.isArray(ch.languageTemplates)) {
+        warnings.push(`${label}: languageTemplates must be an object keyed by language code`);
+      } else {
+        for (const [lang, tpl] of Object.entries(ch.languageTemplates)) {
+          if (!tpl || typeof tpl !== 'object') {
+            warnings.push(`${label}: languageTemplates.${lang} must be an object`);
+            continue;
+          }
+          for (const key of ['messageTemplate', 'shortsTemplate', 'liveTemplate', 'shortsSuffix', 'liveSuffix']) {
+            checkTokens(`${label}.languageTemplates.${lang}.${key}`, tpl[key]);
+          }
+        }
       }
     }
     if (!ch) return;
@@ -835,21 +1027,7 @@ function validateConfig(config) {
     if (ch.excludeKeywords !== undefined && !(Array.isArray(ch.excludeKeywords) && ch.excludeKeywords.every((k) => typeof k === 'string'))) {
       warnings.push(`${label}: excludeKeywords must be an array of strings`);
     }
-    if (ch.digest !== undefined && ch.digest !== null) {
-      if (typeof ch.digest !== 'object') {
-        warnings.push(`${label}: digest must be an object { enabled, hour, separator? }`);
-      } else {
-        if (ch.digest.enabled !== undefined && typeof ch.digest.enabled !== 'boolean') {
-          warnings.push(`${label}: digest.enabled must be true/false`);
-        }
-        if (ch.digest.hour !== undefined && !(Number.isInteger(ch.digest.hour) && ch.digest.hour >= 0 && ch.digest.hour <= 23)) {
-          warnings.push(`${label}: digest.hour must be 0-23 (default 8)`);
-        }
-        if (ch.digest.separator !== undefined && typeof ch.digest.separator !== 'string') {
-          warnings.push(`${label}: digest.separator must be a string`);
-        }
-      }
-    }
+    checkDigest(`${label}.digest`, ch.digest);
     if (ch.sendOrder !== undefined && ch.sendOrder !== 'latest' && ch.sendOrder !== 'unsent') {
       warnings.push(`${label}: sendOrder must be "latest" or "unsent" (default "unsent")`);
     }
@@ -889,64 +1067,85 @@ function validateConfig(config) {
  * Digest delivery: queue formatted videos and flush once at digest.hour.
  * State lives in digest_queue.json so restarts don't lose pending videos.
  */
-async function sendDigest(client, channel, config, posted, dailyCounts, send, timing, label) {
-  const key = channel.youtubeChannelId;
+/** Send one message to one target with human-like typing delay. */
+async function sendToTarget(client, jid, message, timing, label) {
+  const wait = typingDelayMs(message, timing);
+  if (wait > 0) {
+    console.log(`[${label}] Typing delay ${(wait / 1000).toFixed(1)}s before ${jid}...`);
+    await sleep(wait);
+  }
+  try {
+    await client.sendMessage(jid, message);
+    console.log(`[${label}] Sent -> ${jid}`);
+    return true;
+  } catch (err) {
+    console.error(`[${label}] Send failed -> ${jid}:`, err.message);
+    return false;
+  }
+}
+
+/** Add one formatted video to a group's digest queue. */
+async function queueDigestEntry(channel, group, settings, videoData, label) {
+  const key = digestKey(channel.youtubeChannelId, group.jid);
   const queue = loadDigestQueue();
   if (!Array.isArray(queue[key])) queue[key] = [];
-  const known = new Set(queue[key].map((e) => e.id));
-  let added = 0;
-
-  for (const { videoData } of send) {
-    if (known.has(videoData.id)) continue;
-    let text;
-    try {
-      text = formatMessage(channel, videoData);
-    } catch (err) {
-      console.error(`[${label}] digest format failed for ${videoData.id}:`, err.message);
-      continue;
-    }
-    queue[key].push({ id: videoData.id, text, queuedAt: new Date().toISOString() });
-    known.add(videoData.id);
-    added++;
-  }
-  if (queue[key].length > 100) queue[key] = queue[key].slice(-100);
-  saveDigestQueue(queue);
-  console.log(`[${label}] Digest: queued ${added}, pending ${queue[key].length}.`);
-
-  const hour = Number.isInteger(channel.digest.hour) ? channel.digest.hour : 8;
-  if (new Date().getHours() < hour || queue[key].length === 0) return;
-
-  const count = queue[key].length;
-  const max = channel.maxVideosPerDay;
-  if (max && sentTodayCount(key, dailyCounts) + count > max) {
-    console.log(`[${label}] Digest: ${count} queued would exceed daily cap (${max}) — deferring.`);
+  if (queue[key].some((e) => e.id === videoData.id)) return;
+  let text;
+  try {
+    text = formatMessage(settings, videoData);
+  } catch (err) {
+    console.error(`[${label}] digest format failed for ${videoData.id}:`, err.message);
     return;
   }
-
-  const combined = queue[key].map((e) => e.text).join(channel.digest.separator || '\n\n');
-  const typingWait = typingDelayMs(combined, timing);
-  if (typingWait > 0) await sleep(typingWait);
-
-  for (const jid of channel.targetGroupJids) {
-    try {
-      await client.sendMessage(jid, combined);
-      console.log(`[${label}] Digest sent ${count} video(s) -> ${jid}`);
-    } catch (err) {
-      console.error(`[${label}] Digest send failed -> ${jid}:`, err.message);
-    }
-    const gap = betweenSendsDelayMs(timing);
-    if (gap > 0) await sleep(gap);
-  }
-
-  const seen = new Set(posted[key] || []);
-  for (const entry of queue[key]) seen.add(entry.id);
-  posted[key] = [...seen];
-  prunePostedIds(posted, key, config.maxPostedIdsPerChannel);
-  savePosted(posted);
-  queue[key] = [];
+  queue[key].push({ id: videoData.id, text, queuedAt: new Date().toISOString() });
+  if (queue[key].length > 100) queue[key] = queue[key].slice(-100);
   saveDigestQueue(queue);
-  for (let i = 0; i < count; i++) recordSend(key, dailyCounts);
-  saveDailyCounts(dailyCounts);
+  bumpStat(channel.youtubeChannelId, 'queued');
+  console.log(`[${label}] Digest queued ${videoData.id} for ${group.jid} (${queue[key].length} pending).`);
+}
+
+/** Flush one group's digest when its hour has arrived. */
+async function flushGroupDigest(client, channel, group, settings, config, posted, dailyCounts, label) {
+  const digest = settings.digest;
+  const key = digestKey(channel.youtubeChannelId, group.jid);
+  const queue = loadDigestQueue();
+  const items = queue[key] || [];
+  if (items.length === 0) return;
+
+  const hour = Number.isInteger(digest.hour) ? digest.hour : 8;
+  if (new Date().getHours() < hour) return;
+
+  const max = channel.maxVideosPerDay;
+  const remaining = max
+    ? Math.max(0, max - sentTodayCount(channel.youtubeChannelId, dailyCounts))
+    : items.length;
+  if (remaining === 0) {
+    console.log(`[${label}] Digest for ${group.jid}: daily cap (${max}) reached — deferring ${items.length} queued.`);
+    return;
+  }
+  // Send only what the cap allows; keep the rest queued for the next window.
+  const toSend = items.slice(0, remaining);
+  const count = toSend.length;
+
+  const combined = toSend.map((e) => e.text).join(digest.separator || '\n\n');
+  const ok = await sendToTarget(client, group.jid, combined, resolveHumanTiming(settings, config), label);
+
+  if (ok) {
+    const seen = new Set(posted[channel.youtubeChannelId] || []);
+    for (const entry of toSend) seen.add(entry.id);
+    posted[channel.youtubeChannelId] = [...seen];
+    prunePostedIds(posted, channel.youtubeChannelId, config.maxPostedIdsPerChannel);
+    savePosted(posted);
+    const sentIds = new Set(toSend.map((e) => e.id));
+    queue[key] = items.filter((e) => !sentIds.has(e.id));
+    saveDigestQueue(queue);
+    for (let i = 0; i < count; i++) recordSend(channel.youtubeChannelId, dailyCounts);
+    saveDailyCounts(dailyCounts);
+    bumpStat(channel.youtubeChannelId, 'sent', count);
+    console.log(`[${label}] Digest flushed ${count} video(s) -> ${group.jid} (${queue[key].length} left queued)`);
+  } else {
+    bumpStat(channel.youtubeChannelId, 'failed', count);
+  }
 }
 
 async function checkChannel(client, channel, config, posted, dailyCounts) {
@@ -1010,7 +1209,6 @@ async function checkChannel(client, channel, config, posted, dailyCounts) {
     }
 
     const { send, skip } = selectVideosToSend(freshNewestFirst, channel);
-    const timing = resolveHumanTiming(channel, config);
 
     // Preferred-filter skips are intentionally dropped (recorded, never sent).
     if (skip.length > 0) {
@@ -1021,74 +1219,75 @@ async function checkChannel(client, channel, config, posted, dailyCounts) {
       console.log(`[${channelLabel}] Skipped ${skip.length} filtered video(s).`);
     }
 
-    // Digest mode: collect videos and flush them as one combined message at
-    // the configured hour instead of sending each video on arrival.
-    if (channel.digest && channel.digest.enabled) {
-      await sendDigest(client, channel, config, posted, dailyCounts, send, timing, channelLabel);
-      return;
-    }
+    const groups = normalizeGroups(channel);
+    ensureStatsDay();
+    bumpStat(channelKey, 'seen', freshNewestFirst.length);
+    if (skip.length > 0) bumpStat(channelKey, 'skipped', skip.length);
 
     console.log(
-      `[${channelLabel}] Found ${freshNewestFirst.length} new video(s), sending ${send.length} ` +
-        `(order: ${channel.sendOrder || 'unsent'}).`
+      `[${channelLabel}] Found ${freshNewestFirst.length} new video(s), delivering ${send.length} ` +
+        `to ${groups.length} target(s) (order: ${channel.sendOrder || 'unsent'}).`
     );
 
     for (const { videoData } of send) {
       const videoId = videoData.id;
+      let handled = false;
 
-      if (!canSendToday(channel, dailyCounts)) {
-        console.log(
-          `[${channelLabel}] Daily cap reached (${channel.maxVideosPerDay}/day) — ` +
-            `stopping, remainder retried later.`
-        );
-        break;
-      }
+      for (const group of groups) {
+        const settings = groupSettings(channel, group);
+        const groupTiming = resolveHumanTiming(settings, config);
 
-      let message;
-      try {
-        message = formatMessage(channel, videoData);
-      } catch (err) {
-        console.error(`[${channelLabel}] formatMessage failed for ${videoId}:`, err.message);
-        continue;
-      }
-
-      for (const jid of channel.targetGroupJids) {
-        // Human-like: "type" the message first (waits scale with its length),
-        // then send it. Keeps the bot from looking like an instant bot.
-        const typingWait = typingDelayMs(message, timing);
-        if (typingWait > 0) {
-          console.log(`[${channelLabel}] Typing delay ${(typingWait / 1000).toFixed(1)}s before ${jid}...`);
-          await sleep(typingWait);
+        // Per-group digest: queue here, flush later at this group's hour.
+        if (settings.digest && settings.digest.enabled) {
+          await queueDigestEntry(channel, group, settings, videoData, channelLabel);
+          handled = true;
+          continue;
         }
+
+        if (!canSendToday(channel, dailyCounts)) {
+          console.log(`[${channelLabel}] Daily cap reached (${channel.maxVideosPerDay}/day) — skipping ${group.jid}.`);
+          continue;
+        }
+
+        let message;
         try {
-          await client.sendMessage(jid, message);
-          console.log(`[${channelLabel}] Sent ${videoId} -> ${jid}`);
+          message = formatMessage(settings, videoData);
         } catch (err) {
-          // One group failing must not stop the rest.
-          console.error(`[${channelLabel}] Failed to send ${videoId} -> ${jid}:`, err.message);
+          console.error(`[${channelLabel}] formatMessage failed for ${videoId}:`, err.message);
+          continue;
         }
-        // Anti-ban: randomized pause between sends (skip after last group is fine
-        // too, keeps timing human-like when multiple videos/groups queue up).
-        const gap = betweenSendsDelayMs(timing);
-        if (gap > 0) {
-          await sleep(gap);
+
+        const ok = await sendToTarget(client, group.jid, message, groupTiming, channelLabel);
+        if (ok) {
+          recordSend(channelKey, dailyCounts);
+          saveDailyCounts(dailyCounts);
+          bumpStat(channelKey, 'sent');
+        } else {
+          bumpStat(channelKey, 'failed');
         }
+        const gap = betweenSendsDelayMs(groupTiming);
+        if (gap > 0) await sleep(gap);
+        handled = true;
       }
 
       // Persist immediately so a crash doesn't re-send.
-      seen.add(videoId);
-      posted[channelKey] = [...seen];
-      prunePostedIds(posted, channelKey, config.maxPostedIdsPerChannel);
-      try {
-        savePosted(posted);
-      } catch (err) {
-        console.error('[posted] Failed to save posted_videos.json:', err.message);
+      if (handled) {
+        seen.add(videoId);
+        posted[channelKey] = [...seen];
+        prunePostedIds(posted, channelKey, config.maxPostedIdsPerChannel);
+        try {
+          savePosted(posted);
+        } catch (err) {
+          console.error('[posted] Failed to save posted_videos.json:', err.message);
+        }
       }
-      try {
-        recordSend(channelKey, dailyCounts);
-        saveDailyCounts(dailyCounts);
-      } catch (err) {
-        console.error('[daily] Failed to save daily_counts.json:', err.message);
+    }
+
+    // Digest groups may have different hours — flush each due queue.
+    for (const group of groups) {
+      const settings = groupSettings(channel, group);
+      if (settings.digest && settings.digest.enabled) {
+        await flushGroupDigest(client, channel, group, settings, config, posted, dailyCounts, channelLabel);
       }
     }
   } catch (err) {
@@ -1156,6 +1355,10 @@ function main() {
   const posted = loadPosted();
   const dailyCounts = loadDailyCounts();
   const lastCheck = {};
+  setLastCheckProvider((id) => lastCheck[id] || 0);
+  const statusState = loadStatusState();
+  let restartCount = 0;
+  let restartTimer = null;
 
   // Dry run: exercise the REAL bot logic with a fake sender, no WhatsApp
   // client at all. Safe for QA — nothing is actually delivered.
@@ -1182,6 +1385,47 @@ function main() {
       ...(chromePath ? { executablePath: chromePath } : {}),
     },
   });
+
+  const alertAdmins = async (text) => {
+    const watchdog = config.watchdog || {};
+    if (watchdog.alertOnEvents === false) return;
+    for (const jid of (config.adminJids || [])) {
+      try {
+        await client.sendMessage(jid, text);
+      } catch (err) {
+        console.error(`[alert] Failed to notify ${jid}:`, err.message);
+      }
+    }
+  };
+
+  const publishStatus = () => {
+    try {
+      const report = buildStatusReport(config, posted, dailyCounts);
+      writeStatusFile(report);
+      return report;
+    } catch (err) {
+      console.error('[status] Failed to write status.json:', err.message);
+      return null;
+    }
+  };
+
+  const maybeSendScheduledStatus = () => {
+    const hour = Number.isInteger(config.statusHour) ? config.statusHour : 21;
+    const now = new Date();
+    if (now.getHours() < hour) return;
+    const key = todayKey(now);
+    if (statusState.date === key) return;
+    const report = publishStatus();
+    if (!report) return;
+    const message = formatStatusReport(report);
+    for (const jid of (config.statusGroupJids || [])) {
+      client.sendMessage(jid, message)
+        .then(() => console.log(`[status] Report sent -> ${jid}`))
+        .catch((err) => console.error(`[status] Report failed -> ${jid}:`, err.message));
+    }
+    statusState.date = key;
+    try { saveStatusState(statusState); } catch (err) { console.error('[status] Failed to save state:', err.message); }
+  };
 
   client.on('qr', (qr) => {
     console.log('Scan this QR code with WhatsApp > Linked devices:');
@@ -1218,17 +1462,8 @@ function main() {
         return;
       }
       if (cmd === '/status') {
-        const lines = config.channels.map((ch) => {
-          const id = ch.youtubeChannelId;
-          const dueIn = Math.max(0, Math.ceil((intervalFor(ch, config) - (Date.now() - (lastCheck[id] || 0))) / 60000));
-          return [
-            `${ch.enabled === false ? '⏸' : '▶'} ${ch.channelName || id}`,
-            `  id: ${id}`,
-            `  posted: ${(posted[id] || []).length}  today: ${sentTodayCount(id, dailyCounts)}`,
-            `  quiet now: ${isQuietTime(ch, config) ? 'yes' : 'no'}  next check: ~${dueIn}m`,
-          ].join('\n');
-        });
-        await msg.reply(`[status] ${config.channels.length} channel(s)\n${lines.join('\n')}`);
+        const report = buildStatusReport(config, posted, dailyCounts);
+        await msg.reply(formatStatusReport(report));
         return;
       }
       if (cmd === '/pause' || cmd === '/resume') {
@@ -1250,24 +1485,59 @@ function main() {
   });
 
   client.on('ready', async () => {
+    restartCount = 0;
     console.log('[ready] WhatsApp client is ready.');
     for (const channel of config.channels) {
+      const groups = normalizeGroups(channel);
       const everyMin = (channel.checkIntervalMinutes ?? config.checkIntervalMinutes);
-      console.log(`[ready] Watching ${channel.channelName || channel.youtubeChannelId}: every ${everyMin} minute(s).`);
+      console.log(
+        `[ready] Watching ${channel.channelName || channel.youtubeChannelId}: every ${everyMin} minute(s), ` +
+          `${groups.length} target(s).`
+      );
     }
 
-    // Immediate full check, then a 1-minute ticker that checks due channels.
+    // Immediate full check, then a 1-minute ticker that checks due channels,
+    // refreshes status.json and sends the scheduled status report.
     await checkDueChannels(client, config, posted, dailyCounts, lastCheck, { force: true });
+    publishStatus();
+    maybeSendScheduledStatus();
 
     setInterval(() => {
-      checkDueChannels(client, config, posted, dailyCounts, lastCheck).catch((err) =>
-        console.error('[check] Unexpected error:', err.message)
-      );
+      checkDueChannels(client, config, posted, dailyCounts, lastCheck)
+        .catch((err) => console.error('[check] Unexpected error:', err.message))
+        .finally(() => {
+          publishStatus();
+          maybeSendScheduledStatus();
+        });
     }, 60 * 1000);
   });
 
   client.on('disconnected', (reason) => {
     console.error('[client] Disconnected:', reason);
+    alertAdmins(`⚠️ החיזוק השבועי: התנתקות מהוואטסאפ — ${reason}`);
+
+    const watchdog = config.watchdog || {};
+    if (watchdog.enabled === false) return;
+    const maxRestarts = Number.isInteger(watchdog.maxRestarts) ? watchdog.maxRestarts : 5;
+    const delay = typeof watchdog.restartDelayMs === 'number' && watchdog.restartDelayMs >= 0
+      ? watchdog.restartDelayMs
+      : 5000;
+
+    if (restartCount >= maxRestarts) {
+      console.error('[watchdog] Restart limit reached — manual intervention needed.');
+      alertAdmins('🚨 החיזוק השבועי: מיצינו את ניסיונות החיבור מחדש — נדרשת התערבות.');
+      return;
+    }
+    clearTimeout(restartTimer);
+    restartTimer = setTimeout(async () => {
+      restartCount++;
+      console.log(`[watchdog] Reinitializing client (attempt ${restartCount}/${maxRestarts})...`);
+      try {
+        await client.initialize();
+      } catch (err) {
+        console.error('[watchdog] Reinit failed:', err.message);
+      }
+    }, delay);
   });
 
   client.initialize().catch((err) => {
@@ -1285,7 +1555,10 @@ module.exports = {
   typingDelayMs, betweenSendsDelayMs, resolveHumanTiming, HUMAN_TIMING_DEFAULTS,
   fetchChannelItems, innertubeItems,
   isQuietTime, parseClock, prunePostedIds, withRetry, checkDueChannels,
-  loadDigestQueue, saveDigestQueue, sendDigest,
+  loadDigestQueue, saveDigestQueue, digestKey, normalizeGroups, groupSettings,
+  getStats, bumpStat, ensureStatsDay, buildStatusReport, formatStatusReport,
+  writeStatusFile, loadStatusState, saveStatusState, setLastCheckProvider,
+  STATUS_PATH, STATUS_STATE_PATH,
 };
 
 if (require.main === module) {

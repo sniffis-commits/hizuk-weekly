@@ -1,0 +1,22 @@
+{
+  "checkIntervalMinutes": 15,
+  "sendHistoryOnFirstRun": false,
+  "channels": [
+    {
+      "channelName": "Example Channel",
+      "youtubeChannelId": "UC_x5XG1OV2P6uZZ5FSM9Ttw",
+      "targetGroupJids": [
+        {
+          "jid": "120363000000000000@g.us",
+          "messageTemplate": "📿 שיעור חדש: {%VAR_TITLE%}\n{%VAR_URL%}"
+        },
+        {
+          "jid": "120363000000000001@g.us",
+          "messageTemplate": "New video: {%VAR_TITLE%} — {%VAR_URL%}",
+          "shortsSuffix": " #shorts"
+        }
+      ],
+      "messageTemplate": "Fallback template: {%VAR_URL%}"
+    }
+  ]
+}

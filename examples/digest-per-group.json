@@ -1,0 +1,30 @@
+{
+  "checkIntervalMinutes": 15,
+  "sendHistoryOnFirstRun": false,
+  "channels": [
+    {
+      "channelName": "Rabbi Uri Hanania Elnekave",
+      "youtubeChannelId": "UC2s4RBog6eLOstA_GIMOQrg",
+      "targetGroupJids": [
+        {
+          "jid": "120363000000000000@g.us",
+          "digest": { "enabled": true, "hour": 8, "separator": "\n\n---\n\n" }
+        },
+        {
+          "jid": "120363000000000001@g.us",
+          "messageTemplate": "Instant: {%VAR_TITLE%} {%VAR_URL%}"
+        }
+      ],
+      "messageTemplate": "{%VAR_TITLE%}\n{%VAR_URL%}",
+      "maxVideosPerDay": 10
+    },
+    {
+      "channelName": "Rabbi Ovadya Yosef",
+      "youtubeChannelId": "UCp1qY8aM7kY9bOlJ70eEArg",
+      "targetGroupJids": ["120363000000000000@g.us"],
+      "digest": { "enabled": true, "hour": 20 },
+      "messageTemplate": "{%VAR_TITLE%}\n{%VAR_URL%}",
+      "maxVideosPerDay": 10
+    }
+  ]
+}

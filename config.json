@@ -4,6 +4,14 @@
   "feedRetries": 2,
   "maxPostedIdsPerChannel": 500,
   "adminJids": [],
+  "statusGroupJids": [],
+  "statusHour": 21,
+  "watchdog": {
+    "enabled": true,
+    "restartDelayMs": 5000,
+    "maxRestarts": 5,
+    "alertOnEvents": true
+  },
   "quietHours": null,
   "humanTiming": {
     "enabled": true,

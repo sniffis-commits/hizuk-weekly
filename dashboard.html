@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>לוח בקרה | החיזוק השבועי</title>
+  <style>
+    :root { --ink:#10231f; --muted:#63756f; --bg:#f6f4ec; --card:#fff; --green:#0f6b52; --gold:#c99a3c; --line:#e5dfd0; --bad:#b4472f; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:"Segoe UI","Noto Sans Hebrew",Arial,sans-serif; background:var(--bg); color:var(--ink); line-height:1.65; }
+    .wrap { width:min(1080px,92%); margin:0 auto; }
+    header { background:linear-gradient(160deg,#0d3b2f,#08261e); color:#fff; padding:1.6rem 0; }
+    .head { display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap; }
+    h1 { margin:0; font-size:1.6rem; }
+    .sub { color:#bcd2c8; font-size:.88rem; margin-top:.2rem; }
+    button { background:var(--gold); color:#231a08; border:0; border-radius:999px; padding:.6rem 1.1rem; font-weight:800; cursor:pointer; }
+    button:hover { filter:brightness(1.08); }
+    main { padding:2rem 0 4rem; }
+    .notice { background:#fff8e2; border:1px solid #e8d39a; border-radius:14px; padding:1rem 1.2rem; margin-bottom:1.5rem; font-size:.92rem; }
+    .notice code { background:#f0e4bf; padding:.1rem .35rem; border-radius:5px; }
+    .summary { display:flex; gap:.8rem; flex-wrap:wrap; margin-bottom:1.5rem; }
+    .stat { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:.9rem 1.2rem; min-width:140px; box-shadow:0 8px 24px rgba(16,35,31,.06); }
+    .stat b { display:block; font-size:1.5rem; color:var(--green); }
+    .stat span { font-size:.82rem; color:var(--muted); }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:1.1rem; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:1.3rem; box-shadow:0 8px 24px rgba(16,35,31,.06); }
+    .card h2 { margin:0 0 .2rem; font-size:1.15rem; }
+    .id { font-family:consolas,monospace; font-size:.75rem; color:var(--muted); word-break:break-all; }
+    .pill { display:inline-block; border-radius:999px; padding:.15rem .6rem; font-size:.76rem; font-weight:700; margin:.5rem .25rem 0 0; }
+    .on { background:#e4f4ec; color:#0b6b4f; }
+    .off { background:#f5e4e0; color:var(--bad); }
+    .quiet { background:#fff1cf; color:#7a5710; }
+    .rows { margin-top:.9rem; border-top:1px solid var(--line); padding-top:.7rem; display:grid; grid-template-columns:1fr 1fr; gap:.35rem 1rem; font-size:.88rem; }
+    .rows span { color:var(--muted); }
+    .rows b { float:left; }
+    .err { color:var(--bad); background:#fff0ec; border:1px solid #f0c8bd; border-radius:14px; padding:1rem; }
+    footer { text-align:center; color:var(--muted); font-size:.82rem; padding:2rem 0; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap head">
+      <div>
+        <h1>📊 לוח בקרה — החיזוק השבועי</h1>
+        <div class="sub">מצב הערוצים, השליחות והתורים — מתוך <code>status.json</code></div>
+      </div>
+      <button id="refresh" type="button">🔄 רענון</button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="notice" id="notice" hidden>
+      ⚠️ לא ניתן לקרוא את <code>status.json</code> ישירות מקובץ מקומי. הגישו את התיקייה דרך שרת מקומי, לדוגמה:
+      <code>python -m http.server 8080</code> ואז פתחו <code>http://localhost:8080/dashboard.html</code>.
+      ב-GitHub Pages הקובץ יקרא אוטומטית.
+    </div>
+
+    <div id="content" hidden>
+      <div class="summary" id="summary"></div>
+      <div class="grid" id="cards"></div>
+      <p class="sub" id="updated" style="margin-top:1.2rem;"></p>
+    </div>
+    <div id="error" class="err" hidden></div>
+  </main>
+
+  <footer>החיזוק השבועי · תורה קצרה, כל יום</footer>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    async function load() {
+      $('error').hidden = true;
+      try {
+        const res = await fetch('status.json', { cache: 'no-store' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        if (!Array.isArray(data.channels)) throw new Error('status.json lacks channels[]');
+        render(data);
+      } catch (err) {
+        $('notice').hidden = false;
+        $('content').hidden = true;
+        $('error').hidden = false;
+        $('error').textContent = 'שגיאה בקריאת status.json: ' + err.message;
+      }
+    }
+
+    function render(data) {
+      $('notice').hidden = true;
+      $('content').hidden = false;
+      const channels = data.channels;
+      const total = (key) => channels.reduce((n, c) => n + (Number(c[key]) || 0), 0);
+      $('summary').innerHTML = [
+        ['ערוצים', channels.length],
+        ['נשלחו היום', total('sentToday')],
+        ['נצפו היום', total('seenToday')],
+        ['דילוגים', total('skippedToday')],
+        ['כשלונות', total('failedToday')],
+        ['בתור', total('queuedToday')],
+      ].map(([label, value]) => `<div class="stat"><b>${value}</b><span>${label}</span></div>`).join('');
+
+      $('cards').innerHTML = channels.map((c) => `
+        <article class="card">
+          <h2>${escapeHtml(c.name || c.id)}</h2>
+          <div class="id">${escapeHtml(c.id || '')}</div>
+          <div>
+            <span class="pill ${c.enabled ? 'on' : 'off'}">${c.enabled ? '▶ פעיל' : '⏸ מושהה'}</span>
+            ${c.quietNow ? '<span class="pill quiet">🌙 שקט עכשיו</span>' : ''}
+            ${c.digest !== null && c.digest !== undefined ? `<span class="pill on">📦 דייג'סט ${c.digest}:00</span>` : ''}
+          </div>
+          <div class="rows">
+            <div><span>נשלחו היום: </span><b>${c.sentToday ?? 0}</b></div>
+            <div><span>סה"כ: </span><b>${c.posted ?? 0}</b></div>
+            <div><span>נצפו: </span><b>${c.seenToday ?? 0}</b></div>
+            <div><span>דילוגים: </span><b>${c.skippedToday ?? 0}</b></div>
+            <div><span>כשלונות: </span><b>${c.failedToday ?? 0}</b></div>
+            <div><span>בתור: </span><b>${c.queuedToday ?? 0}</b></div>
+            <div><span>בדיקה הבאה: </span><b>~${c.dueInMinutes ?? 0} דק'</b></div>
+            <div><span>יעדים: </span><b>${(c.targets || []).length}</b></div>
+          </div>
+        </article>`).join('');
+
+      $('updated').textContent = 'עודכן: ' + new Date(data.generatedAt).toLocaleString('he-IL');
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (ch) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      }[ch]));
+    }
+
+    $('refresh').addEventListener('click', load);
+    load();
+    setInterval(load, 60000);
+  </script>
+</body>
+</html>

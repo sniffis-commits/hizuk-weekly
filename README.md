@@ -1,8 +1,9 @@
 # החיזוק השבועי (hizuk-weekly)
 
 Monitors YouTube Torah channels and broadcasts new videos to WhatsApp groups.
-Includes a promotional, frontend-only homepage: open **`index.html`** (or
-enable GitHub Pages on this repo to publish it).
+Includes a promotional, frontend-only homepage (**`index.html`**) and a
+static admin dashboard (**`dashboard.html`**, fed by generated `status.json`).
+Both can be published with GitHub Pages.
 
 > The homepage is static HTML/CSS with no external assets. The WhatsApp invite
 > link in it is a placeholder — replace `REPLACE_WITH_GROUP_INVITE` with your
@@ -214,6 +215,9 @@ Per check, per channel:
 | File | Purpose |
 |---|---|
 | `index.js` | The bot: feed monitoring + WhatsApp broadcast loop |
+| `index.html` | Promotional frontend-only homepage ( Hebrew, RTL ) |
+| `dashboard.html` | Static admin dashboard reading `status.json` |
+| `status.json` | Generated runtime snapshot for the dashboard (not committed) |
 | `config.json` | Interval, message template, channel list |
 | `posted_videos.json` | Runtime state: already-posted video IDs per channel |
 | `daily_counts.json` | Runtime state: per-channel sends per day (`{channelId: {date: n}}`, 7-day window) |
@@ -344,6 +348,107 @@ Baby steps (first time):
   `https://www.youtube.com/feeds/videos.xml?channel_id=UC...` in a browser
   (it currently returns 404 — that is YouTube-side, not a bot bug).
 
+## Sample configs (`examples/`)
+
+Complete drop-in `config.json` files, one per option — copy one, replace the
+placeholder JIDs, run `node index.js --dry-run`, then `npm start`:
+
+| File | Shows |
+|---|---|
+| `basic.json` | Minimal setup |
+| `per-group-templates.json` | Different wording per group |
+| `digest-per-group.json` | Daily digest in one group, instant sends in another |
+| `admin-commands.json` | Admin JID + WhatsApp commands |
+| `status-analytics.json` | Scheduled status group + `status.json` |
+| `watchdog.json` | Auto-restart on disconnect |
+| `multilanguage.json` | Hebrew and English groups |
+| `full.json` | Everything combined |
+
+All eight validate cleanly with `validateConfig()`. See `examples/README.md`.
+
+## Feature run 3 (2026-11)
+
+### 1. Per-group message templates
+
+`targetGroupJids` accepts a plain JID **or an object**:
+
+```json
+"targetGroupJids": [
+  "120363000000000000@g.us",
+  {
+    "jid": "120363000000000001@g.us",
+    "messageTemplate": "EN: {%VAR_TITLE%} — {%VAR_URL%}",
+    "shortsSuffix": " #shorts",
+    "digest": { "enabled": true, "hour": 8 }
+  }
+]
+```
+
+Resolution order: **group override → language template → channel → URL-only
+fallback**. Overridable per group: `messageTemplate`, `shortsTemplate`,
+`liveTemplate`, `shortsSuffix`, `liveSuffix`, `customKeywordRules`,
+`extendedRules`, `digest`, `humanTiming`.
+
+### 2. Scheduled digest per group
+
+`digest: { "enabled": true, "hour": 8, "separator": "\n\n" }` can be set on a
+channel **or a single group**. Videos are formatted at capture time into
+`digest_queue.json` (keyed `channelId::jid`) and flushed as one combined
+message when the group's hour arrives. The daily cap is shared: if fewer
+than `maxVideosPerDay` slots remain, only that many queued videos are sent
+and the rest stay queued for the next window (no permanent deadlock).
+
+### 3. Admin commands
+
+Add your JID to global `adminJids`. Send the bot:
+
+- `/status` — counters, queued items, quiet state, next check, digest hour
+- `/pause [channel]` / `/resume [channel]` — in-memory toggles
+- `/reload` — re-read `config.json` without restarting
+- `/help`
+
+Pause/resume/reload reset on restart; edit `config.json` to persist.
+
+### 4. Auto-restart watchdog
+
+```json
+"watchdog": {
+  "enabled": true,
+  "restartDelayMs": 5000,
+  "maxRestarts": 5,
+  "alertOnEvents": true
+}
+```
+
+On `disconnected`, the bot notifies `adminJids` and reinitializes the client
+after the delay, up to `maxRestarts`. Counters reset on a successful `ready`.
+
+### 5. Status reports + analytics
+
+Set `statusGroupJids` and `statusHour` (default 21) to receive one Hebrew
+daily summary per group. Every check also writes `status.json` with
+per-channel counters (seen/sent/skipped/failed/queued, posted totals, quiet
+state, next check). Counters reset at local midnight.
+
+### 6. Multi-language templates
+
+```json
+"languageTemplates": {
+  "he": { "messageTemplate": "📿 {%VAR_TITLE%}\n{%VAR_URL%}" },
+  "en": { "messageTemplate": "New: {%VAR_TITLE%} — {%VAR_URL%}" }
+}
+```
+
+Tag each group object with `"language": "he"` or `"en"`. A group with an
+explicit `messageTemplate` still wins over its language template.
+
+### 7. Admin dashboard (`dashboard.html`)
+
+Static RTL page that fetches `status.json`, shows summary tiles and one card
+per channel, refreshes every 60 s, and has a manual refresh button. Serve the
+folder over HTTP (`python -m http.server 8080`) — `file://` cannot fetch JSON
+(the page shows a hint in that case). On GitHub Pages it works directly.
+
 ## Feature run 2 (2026-11)
 
 New in this round:
@@ -377,9 +482,12 @@ Bugs found and fixed:
 - **`--dry-run` wrote state**: it now runs the full real logic with no
   persistence and no WhatsApp connection.
 
-Also added: `npm test` (11 offline assertions), feed retries, posted-ID
-pruning, `enabled` toggle, quiet hours, and unhandled-error logging. All 11
-self-tests pass; live PoC + dry-run verified end-to-end.
+Also added: `npm test` (**15** offline assertions), feed retries, posted-ID
+pruning, `enabled` toggle, quiet hours, unhandled-error logging, per-group
+templates/languages, per-group digest, admin commands, watchdog, status
+reports, and the dashboard. All 15 self-tests pass; live mixed-mode
+integration (instant English group + Hebrew digest group with shared daily
+cap), dry-run, and the eight example configs were verified end-to-end.
 
 ## Notes
 

@@ -9,7 +9,8 @@ const {
   typingDelayMs, betweenSendsDelayMs, resolveHumanTiming,
   isQuietTime, parseClock, prunePostedIds, intervalFor,
   canSendToday, recordSend, sentTodayCount, HUMAN_TIMING_DEFAULTS,
-  loadDigestQueue, saveDigestQueue,
+  loadDigestQueue, saveDigestQueue, normalizeGroups, groupSettings,
+  buildStatusReport, formatStatusReport, setLastCheckProvider, digestKey,
 } = require('./index.js');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -79,6 +80,44 @@ test('digest queue round-trips through a file', () => {
   } finally {
     try { fs.unlinkSync(file); } catch (_) {}
   }
+});
+
+test('groups: strings and objects normalize; language + group overrides win', () => {
+  const channel = {
+    channelName: 'C',
+    youtubeChannelId: 'UC_x5XG1OV2P6uZZ5FSM9Ttw',
+    messageTemplate: '{%VAR_URL%}',
+    languageTemplates: { he: { messageTemplate: 'HE {%VAR_TITLE%}' } },
+    targetGroupJids: [
+      '120363000000000000@g.us',
+      { jid: '120363000000000001@g.us', language: 'he' },
+      { jid: '120363000000000002@c.us', messageTemplate: 'GROUP {%VAR_URL%}' },
+    ],
+  };
+  const groups = normalizeGroups(channel);
+  assert.equal(groups.length, 3);
+  assert.equal(groupSettings(channel, groups[0]).messageTemplate, '{%VAR_URL%}');
+  assert.equal(groupSettings(channel, groups[1]).messageTemplate, 'HE {%VAR_TITLE%}');
+  assert.equal(groupSettings(channel, groups[2]).messageTemplate, 'GROUP {%VAR_URL%}');
+  assert.equal(digestKey(channel.youtubeChannelId, groups[1].jid),
+    'UC_x5XG1OV2P6uZZ5FSM9Ttw::120363000000000001@g.us');
+});
+
+test('status report has counters and renders text', () => {
+  setLastCheckProvider(() => Date.now());
+  const channel = {
+    channelName: 'C', youtubeChannelId: 'UC_x5XG1OV2P6uZZ5FSM9Ttw',
+    targetGroupJids: ['120363000000000000@g.us'], messageTemplate: 'x',
+  };
+  const report = buildStatusReport(
+    { checkIntervalMinutes: 15, channels: [channel] },
+    { [channel.youtubeChannelId]: ['a', 'b'] },
+    {}
+  );
+  assert.equal(report.channels.length, 1);
+  assert.equal(report.channels[0].posted, 2);
+  assert.equal(report.channels[0].sentToday, 0);
+  assert.match(formatStatusReport(report), /נשלחו היום/);
 });
 
 test('human timing: bounded, randomized, overridable, disabled', () => {
