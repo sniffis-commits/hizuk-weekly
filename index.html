@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="החיזוק השבועי — סרטוני תורה קצרים מרבנים שונים, כל יום, ישירות לוואטסאפ." />
+  <meta name="description" content="החיזוק השבועי — לימוד תורה יומי קצר וממוקד, סרטון אחד ביום שמחזיק את היום." />
   <meta name="theme-color" content="#0f2f2a" />
   <title>החיזוק השבועי | תורה קצרה, כל יום</title>
   <style>
@@ -54,7 +54,7 @@
     }
     .btn:hover { transform: translateY(-2px); }
     .btn-primary { background: var(--green); color: #fff; box-shadow: 0 8px 22px rgba(15, 107, 82, .25); }
-    .btn-ghost { background: #fff; color: var(--green-deep); border: 1px solid var(--line); }
+    .btn-ghost { background: transparent; color: #fff; border: 1px solid rgba(255, 255, 255, .35); }
     .hero {
       background:
         radial-gradient(circle at 85% 10%, rgba(201, 154, 60, .18), transparent 35%),
@@ -76,16 +76,18 @@
     h1 span { color: #f0cd82; }
     .hero p.lead { font-size: 1.15rem; color: #d6e4dd; max-width: 44ch; margin: 0 0 2rem; }
     .hero-actions { display: flex; gap: .8rem; flex-wrap: wrap; }
-    .hero-actions .btn-ghost { background: transparent; color: #fff; border-color: rgba(255, 255, 255, .35); }
     .hero-note { margin-top: 1.2rem; font-size: .85rem; color: #a9c2b8; }
-    .phone {
+    .daily-card {
       background: rgba(255, 255, 255, .07); border: 1px solid rgba(255, 255, 255, .16);
-      border-radius: 34px; padding: 1.2rem; box-shadow: var(--shadow);
+      border-radius: 34px; padding: 1.6rem; box-shadow: var(--shadow);
     }
-    .phone-screen { background: #e8eee9; border-radius: 24px; padding: 1rem; color: var(--ink); }
-    .chat-bubble { background: #fff; border-radius: 16px 16px 16px 4px; padding: .8rem 1rem; margin-bottom: .8rem; box-shadow: 0 3px 10px rgba(0,0,0,.06); font-size: .9rem; }
-    .chat-bubble strong { color: var(--green); }
-    .chat-bubble.time { margin-inline-start: 3rem; background: #dff3e9; border-radius: 16px 16px 4px 16px; font-size: .82rem; color: var(--muted); }
+    .daily-inner { background: #fffdf7; border-radius: 24px; padding: 1.6rem; color: var(--ink); }
+    .daily-label { font-size: .78rem; color: var(--gold); font-weight: 800; letter-spacing: .06em; }
+    .daily-title { font-size: 1.5rem; line-height: 1.35; margin: .6rem 0 .8rem; }
+    .daily-text { font-size: .95rem; color: var(--muted); margin: 0 0 1rem; }
+    .daily-divider { height: 1px; background: var(--line); margin: 1.1rem 0; }
+    .daily-foot { display: flex; justify-content: space-between; align-items: center; gap: .8rem; font-size: .8rem; color: var(--muted); }
+    .daily-foot b { color: var(--green); }
     .badges { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: 2.5rem; }
     .badge { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.16); border-radius: 12px; padding: .7rem 1rem; font-size: .85rem; }
     .badge b { display: block; font-size: 1.3rem; color: #f0cd82; }
@@ -140,7 +142,7 @@
     @media (max-width: 820px) {
       .hero-inner, .grid-3, .grid-2 { grid-template-columns: 1fr; }
       .hero { padding: 3.5rem 0 4rem; }
-      .phone { max-width: 380px; }
+      .daily-card { max-width: 420px; }
       .nav-links a:not(.btn) { display: none; }
     }
   </style>
@@ -153,8 +155,8 @@
         <span>החיזוק השבועי<small>תורה קצרה, כל יום</small></span>
       </a>
       <nav class="nav-links" aria-label="ניווט ראשי">
-        <a href="#about">על הפרויקט</a>
-        <a href="#how">איך זה עובד</a>
+        <a href="#about">על הלימוד</a>
+        <a href="#how">איך לומדים</a>
         <a href="#rabbis">הרבנים</a>
         <a class="btn btn-primary" href="#join">הצטרפו עכשיו</a>
       </nav>
@@ -165,28 +167,35 @@
     <section class="hero">
       <div class="container hero-inner">
         <div>
-          <span class="kicker"><span class="pulse" aria-hidden="true"></span> שיעור יומי קצר · נשלח אליכם</span>
+          <span class="kicker"><span class="pulse" aria-hidden="true"></span> שיעור יומי קצר · רעיון אחד ליום</span>
           <h1>דקות ספורות של תורה.<br /><span>חיזוק שמחזיק את כל היום.</span></h1>
           <p class="lead">
-            סרטונים קצרים מתוך ערוצי הרבנים — נבחרים, מסודרים ונשלחים אליכם
-            ישירות לוואטסאפ, בבוקר, בלי לחפש ובלי לברוח מהזמן.
+            סרטוני תורה קצרים מרבנים שאנחנו אוהבים. כל יום בוחרים רעיון אחד,
+            ממוקד וברור — כדי שיהיה איתך גם כשהיום עמוס.
           </p>
           <div class="hero-actions">
-            <a class="btn btn-primary" href="#join">הצטרפו לקבוצה ←</a>
-            <a class="btn btn-ghost" href="#how">איך זה עובד?</a>
+            <a class="btn btn-primary" href="#join">הצטרפו ללימוד ←</a>
+            <a class="btn btn-ghost" href="#how">מה לומדים כאן?</a>
           </div>
-          <div class="badges" aria-label="נתוני הפרויקט">
-            <div class="badge"><b>3</b> ערוצי רבנים</div>
-            <div class="badge"><b>יומי</b> תדרוך תורה</div>
-            <div class="badge"><b>קצר</b> סרטונים ממוקדים</div>
+          <div class="badges" aria-label="נתוני הלימוד">
+            <div class="badge"><b>3</b> רבנים</div>
+            <div class="badge"><b>יומי</b> שיעור אחד</div>
+            <div class="badge"><b>קצר</b> וממוקד</div>
           </div>
         </div>
-        <div class="phone" aria-hidden="true">
-          <div class="phone-screen">
-            <div class="chat-bubble"><strong>החיזוק השבועי</strong><br />📿 שיעור היום: סוד הצדיק — סרטון קצר מר' אורי חנניה אלנקוה</div>
-            <div class="chat-bubble">🎥 סרטון נוסף מאת הרב עובדיה יוסף — פרשת השבוע</div>
-            <div class="chat-bubble time">נשלח היום ב־08:00 · רק מהחדש</div>
-            <div class="chat-bubble time">בלי כפילויות. בלי ספאם. רק תורה.</div>
+        <div class="daily-card" aria-label="דוגמה לשיעור היום">
+          <div class="daily-inner">
+            <div class="daily-label">שיעור היום</div>
+            <div class="daily-title">הצדיק שמגן על דורו</div>
+            <p class="daily-text">
+              רעיון קצר מפרשת השבוע: sometimes מספיקה מילה אחת טובה כדי לחזק
+              את כל היום. כאן לומדים אותה בכמה דקות.
+            </p>
+            <div class="daily-divider"></div>
+            <div class="daily-foot">
+              <span><b>פרשת השבוע</b> · דרשה קצרה</span>
+              <span>דקות ספורות ⏱</span>
+            </div>
           </div>
         </div>
       </div>
@@ -195,29 +204,29 @@
     <section id="about">
       <div class="container">
         <div class="section-head">
-          <span class="eyebrow">על הפרויקט</span>
+          <span class="eyebrow">על הלימוד</span>
           <h2>ללמוד תורה גם ביום עמוס</h2>
           <p>
-            "החיזוק השבועי" הוא קבוצת וואטסאפ ששולחת מדי יום מבחר קצר מתוך ערוצי
-            תורה פופולריים ביוטיוב. המטרה פשוטה: לתת נקודת חיזוק אחת, ברורה וזמינה —
-            גם כשאין זמן לשיעור ארוך.
+            "החיזוק השבועי" הוא מסגרת לימוד יומית קצרה. מדי יום מתמקדים
+            ברעיון אחד מתוך שיעורי התורה של הרבנים שאנחנו אוהבים — דרשה,
+            פרשת השבוע או סיפור מחזק — ונותנים לו מקום לפני שמתחילים את היום.
           </p>
         </div>
         <div class="grid grid-3">
           <article class="card">
             <div class="step-num">1</div>
-            <h3>רק מהחדש</h3>
-            <p>הבוט בודק את הערוצים באופן קבוע ושולח רק סרטונים שטרם פורסמו בקבוצה — בלי חזרות.</p>
+            <h3>רעיון אחד בכל יום</h3>
+            <p>לא עוד שיעור ארוך שנדחה ל מחר. רעיון אחד, ברור וזמין, שמלווה אותך הלאה.</p>
           </article>
           <article class="card">
             <div class="step-num">2</div>
-            <h3>אצלכם בוואטסאפ</h3>
-            <p>השיעורים מגיעים ישירות לקבוצה, בזמן שנוח לכם לקרוא — בבוקר או לאורך היום.</p>
+            <h3>מגוון של מורים</h3>
+            <p>דרשות, פרשת השבוע וסרטוני חיזוק קצרים — כדי שתמיד יהיה מה ללמוד ולחזור אליו.</p>
           </article>
           <article class="card">
             <div class="step-num">3</div>
-            <h3>מגוון רבנים</h3>
-            <p>שילוב של דרשות, פרשת השבוע וסרטוני חיזוק קצרים ממספר רבנים — לטעם של כולם.</p>
+            <h3>קצב שנוח להחזיק</h3>
+            <p>כמה דקות ביום מספיקות כדי לבנות הרגל לימוד יציב, בלי להרגיש שזה עוד מטלה.</p>
           </article>
         </div>
       </div>
@@ -226,14 +235,14 @@
     <section id="how">
       <div class="container">
         <div class="section-head">
-          <span class="eyebrow">איך זה עובד</span>
-          <h2>מהסרטון לטלפון שלכם</h2>
-          <p>הכל אוטומטי, אבל עם עין אנושית על הקצב והתוכן.</p>
+          <span class="eyebrow">איך לומדים כאן</span>
+          <h2>ממילים לחיזוק שמרגישים</h2>
+          <p>פשוט: בוחרים, צופים, ולוקחים איתך רעיון אחד הלאה.</p>
         </div>
         <div class="grid grid-3">
-          <article class="card"><div class="step-num">①</div><h3>מעקב אחר ערוצים</h3><p>הבוט עוקב אחרי ערוצי הרבנים ומזהה סרטונים חדשים בזמן אמת.</p></article>
-          <article class="card"><div class="step-num">②</div><h3>סינון ובחירה</h3><p>אפשר לבחור רק סרטוני פרשת השבוע, או לסנן מילים מסוימות — לפי הגדרת הקבוצה.</p></article>
-          <article class="card"><div class="step-num">③</div><h3>שליחה מבוקרת</h3><p>הודעות נשלחות בהפסקות טבעיות, עם הגבלה יומית, כדי שיהיה חיזוק — לא הצפה.</p></article>
+          <article class="card"><div class="step-num">①</div><h3>בחירה יומית</h3><p>כל יום מתמקדים בנושא אחד — פרשה, דרשה או רעיון מחזק.</p></article>
+          <article class="card"><div class="step-num">②</div><h3>צפייה קצרה</h3><p>סרטון קצר, בלי הסחות דעת, עם נקודה אחת שלוקחים מהשיעור.</p></article>
+          <article class="card"><div class="step-num">③</div><h3>יישום קטן</h3><p>משפט אחד, מחשבה אחת, מעשה קטן — כך הלימוד נשאר איתך גם אחרי הסרטון.</p></article>
         </div>
       </div>
     </section>
@@ -241,33 +250,33 @@
     <section id="samples">
       <div class="container">
         <div class="section-head">
-          <span class="eyebrow">דוגמאות</span>
-          <h2>ככה זה נראה אצלכם בקבוצה</h2>
-          <p>דוגמאות להודעות בסגנון שנשלח — עם קישור ישיר לסרטון המקורי ביוטיוב.</p>
+          <span class="eyebrow">מה לומדים</span>
+          <h2>נושאים שחוזרים אצלנו</h2>
+          <p>התכנים מתוך השיעורים של הרבנים — בקישור ישיר למקור, כדי שתוכלו להעמיק כשיש זמן.</p>
         </div>
         <div class="grid grid-3">
           <article class="card video-card">
-            <div class="thumb" aria-hidden="true">▶<span class="tag">סרטון קצר</span></div>
+            <div class="thumb" aria-hidden="true">▶<span class="tag">חיזוק</span></div>
             <div class="video-body">
-              <h3>סוד הצדיק — חיזוק קצר</h3>
-              <p>מתוך ערוץ הרב אורי חנניה אלנקוה</p>
-              <a href="https://www.youtube.com/@RabbiUriHananiaElnekave" target="_blank" rel="noopener">לערוץ ביוטיוב ↗</a>
+              <h3>סוד הצדיק — רעיון קצר לחזק את היום</h3>
+              <p>מתוך השיעורים של הרב אורי חנניה אלנקוה</p>
+              <a href="https://www.youtube.com/@RabbiUriHananiaElnekave" target="_blank" rel="noopener">לשיעורים ↗</a>
             </div>
           </article>
           <article class="card video-card">
             <div class="thumb gold" aria-hidden="true">📖<span class="tag">פרשת השבוע</span></div>
             <div class="video-body">
-              <h3>פרשת השבוע — צדיק תמים מגן על דורו</h3>
-              <p>מתוך ערוץ הרב עובדיה יוסף</p>
-              <a href="https://www.youtube.com/@RabbiOvadyaYosef" target="_blank" rel="noopener">לערוץ ביוטיוב ↗</a>
+              <h3>צדיק תמים מגן על דורו</h3>
+              <p>מתוך השיעורים של הרב עובדיה יוסף</p>
+              <a href="https://www.youtube.com/@RabbiOvadyaYosef" target="_blank" rel="noopener">לשיעורים ↗</a>
             </div>
           </article>
           <article class="card video-card">
-            <div class="thumb blue" aria-hidden="true">✨<span class="tag">חיזוק יומי</span></div>
+            <div class="thumb blue" aria-hidden="true">✨<span class="tag">הרגל יומי</span></div>
             <div class="video-body">
-              <h3>דקה של תורה לפני שמתחילים את היום</h3>
-              <p>מבחר יומי מהערוצים שנעקבים אחריהם</p>
-              <a href="#join">לקבלת ההודעות בקבוצה →</a>
+              <h3>דקה של תורה לפני שמתחילים</h3>
+              <p>רעיון פשוט שלא דורש שום הכנה מוקדמת</p>
+              <a href="#join">להצטרפות ללימוד →</a>
             </div>
           </article>
         </div>
@@ -277,17 +286,17 @@
     <section id="rabbis" class="rabbis">
       <div class="container">
         <div class="section-head">
-          <span class="eyebrow">הערוצים במערכת</span>
-          <h2>ממנים שמשהו טוב</h2>
-          <p>הרשימה ניתנת להרחבה — אפשר להוסיף ערוץ נוסף בכל עת.</p>
+          <span class="eyebrow">המורים שלנו</span>
+          <h2>ממנים ששווה לשמוע</h2>
+          <p>נמשיך להוסיף עוד מורים ושיעורים, כדי שתמיד יהיה מה ללמוד.</p>
         </div>
         <div class="grid grid-2">
           <article class="card rabbi">
             <div class="avatar" aria-hidden="true">א</div>
             <div>
               <h3>הרב אורי חנניה אלנקוה</h3>
-              <p>דרשות וסודות התורה — סרטונים קצרים וממוקדים.</p>
-              <a href="https://www.youtube.com/@RabbiUriHananiaElnekave" target="_blank" rel="noopener" style="color:var(--green);font-size:.85rem;font-weight:700;text-decoration:none;">צפו בערוץ ↗</a>
+              <p>דרשות וסודות התורה — רעיונות קצרים וממוקדים.</p>
+              <a href="https://www.youtube.com/@RabbiUriHananiaElnekave" target="_blank" rel="noopener" style="color:var(--green);font-size:.85rem;font-weight:700;text-decoration:none;">לשיעורים ↗</a>
             </div>
           </article>
           <article class="card rabbi">
@@ -295,7 +304,7 @@
             <div>
               <h3>הרב עובדיה יוסף</h3>
               <p>פרשת השבוע ושיעורים קלאסיים בקצרה ובבהירות.</p>
-              <a href="https://www.youtube.com/@RabbiOvadyaYosef" target="_blank" rel="noopener" style="color:var(--green);font-size:.85rem;font-weight:700;text-decoration:none;">צפו בערוץ ↗</a>
+              <a href="https://www.youtube.com/@RabbiOvadyaYosef" target="_blank" rel="noopener" style="color:var(--green);font-size:.85rem;font-weight:700;text-decoration:none;">לשיעורים ↗</a>
             </div>
           </article>
         </div>
@@ -307,9 +316,9 @@
         <div class="cta">
           <span class="eyebrow">הצטרפו</span>
           <h2>תנו ליום להתחיל עם חיזוק</h2>
-          <p>הצטרפו לקבוצת הוואטסאפ ותקבלו את מבחר הסרטונים הקצרים ישירות לטלפון. ללא עלות, ללא ספאם.</p>
-          <a class="btn btn-primary" href="https://chat.whatsapp.com/REPLACE_WITH_GROUP_INVITE" target="_blank" rel="noopener">הצטרפו לקבוצה בוואטסאפ ←</a>
-          <p style="margin-top:1rem;font-size:.8rem;">אין לכם קישור? כתבו לנו ונשלח הזמנה.</p>
+          <p>הצטרפו למסגרת הלימוד היומית שלנו — רעיון אחד, סרטון קצר, והרגל קטן שמחזיק לאורך כל השבוע.</p>
+          <a class="btn btn-primary" href="https://chat.whatsapp.com/REPLACE_WITH_GROUP_INVITE" target="_blank" rel="noopener">הצטרפו ללימוד ←</a>
+          <p style="margin-top:1rem;font-size:.8rem;">אין לכם קישור? כתבו לנו ונשמח לעזור.</p>
         </div>
       </div>
     </section>
@@ -317,7 +326,7 @@
 
   <footer>
     <div class="container footer-inner">
-      <span>© <span id="year">2026</span> החיזוק השבועי · נבנה מתוך אהבה לתורה ולטכנולוגיה.</span>
+      <span>© <span id="year">2026</span> החיזוק השבועי · תורה קצרה, כל יום.</span>
       <span><a href="#top">חזרה למעלה ↑</a></span>
     </div>
   </footer>

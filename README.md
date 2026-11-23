@@ -5,9 +5,10 @@ Includes a promotional, frontend-only homepage (**`index.html`**) and a
 static admin dashboard (**`dashboard.html`**, fed by generated `status.json`).
 Both can be published with GitHub Pages.
 
-> The homepage is static HTML/CSS with no external assets. The WhatsApp invite
-> link in it is a placeholder — replace `REPLACE_WITH_GROUP_INVITE` with your
-> real group invite URL.
+> The homepage is static HTML/CSS with no external assets. It describes only
+> the Torah learning — the bot is entirely behind the scenes and is never
+> mentioned on the page. The invite link is a placeholder: replace
+> `REPLACE_WITH_GROUP_INVITE` with your real group invite URL.
 
 ## Setup
 
