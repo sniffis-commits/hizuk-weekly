@@ -1,29 +1,23 @@
 {
   "checkIntervalMinutes": 15,
   "sendHistoryOnFirstRun": false,
-  "messageTemplate": "MSG MSG MSG MSG {%VAR_URL%}{%VAR_EXTENDED%}",
-  "shortsTemplate": null,
-  "liveTemplate": null,
-  "shortsSuffix": " ⚡ (#Shorts)",
-  "liveSuffix": " 🔴 (Live/Premiere)",
-  "customKeywordRules": [
-    {
-      "keyword": "giveaway",
-      "suffix": " 🎁 Don't miss the giveaway!"
-    }
-  ],
-  "extendedRules": [
-    {
-      "match": "this week",
-      "text": "\n📚 This week's playlist: {%VAR_PLAYLIST_URL%}",
-      "playlistId": "PLxxxxxxxxxxxxxxxxxxxxxx"
-    },
-    {
-      "match": "new stuff",
-      "text": "\n✨ New stuff playlist: {%VAR_PLAYLIST_URL%}",
-      "playlistId": "PLyyyyyyyyyyyyyyyyyyyyyy"
-    }
-  ],
+  "feedRetries": 2,
+  "maxPostedIdsPerChannel": 500,
+  "adminJids": [],
+  "quietHours": null,
+  "humanTiming": {
+    "enabled": true,
+    "msPerChar": 50,
+    "msPerWord": 40,
+    "jitterMs": 700,
+    "minTypingMs": 400,
+    "maxTypingMs": 20000,
+    "betweenSendsMinMs": 3000,
+    "betweenSendsMaxMs": 8000,
+    "pauseChance": 0.12,
+    "pauseMinMs": 5000,
+    "pauseMaxMs": 20000
+  },
   "channels": [
     {
       "channelName": "Example Channel",
@@ -31,6 +25,36 @@
       "targetGroupJids": [
         "120363000000000000@g.us",
         "120363000000000001@g.us"
+      ],
+      "checkIntervalMinutes": 15,
+      "maxVideosPerDay": null,
+      "preferredKeywords": [],
+      "excludeKeywords": [],
+      "digest": { "enabled": false, "hour": 8, "separator": "\n\n" },
+      "sendOrder": "unsent",
+      "latestCount": 3,
+      "messageTemplate": "MSG MSG MSG MSG {%VAR_URL%}{%VAR_EXTENDED%}",
+      "shortsTemplate": null,
+      "liveTemplate": null,
+      "shortsSuffix": " ⚡ (#Shorts)",
+      "liveSuffix": " 🔴 (Live/Premiere)",
+      "customKeywordRules": [
+        {
+          "keyword": "giveaway",
+          "suffix": " 🎁 Don't miss the giveaway!"
+        }
+      ],
+      "extendedRules": [
+        {
+          "match": "this week",
+          "text": "\n📚 This week's playlist: {%VAR_PLAYLIST_URL%}",
+          "playlistId": "PLxxxxxxxxxxxxxxxxxxxxxx"
+        },
+        {
+          "match": "new stuff",
+          "text": "\n✨ New stuff playlist: {%VAR_PLAYLIST_URL%}",
+          "playlistId": "PLyyyyyyyyyyyyyyyyyyyyyy"
+        }
       ]
     },
     {
@@ -38,6 +62,36 @@
       "youtubeChannelId": "UC2s4RBog6eLOstA_GIMOQrg",
       "targetGroupJids": [
         "120363000000000000@g.us"
+      ],
+      "checkIntervalMinutes": 15,
+      "maxVideosPerDay": 2,
+      "preferredKeywords": [],
+      "excludeKeywords": [],
+      "digest": { "enabled": false, "hour": 8, "separator": "\n\n" },
+      "sendOrder": "unsent",
+      "latestCount": 3,
+      "messageTemplate": "Rabbi URI!!!!!!! {%VAR_URL%}{%VAR_EXTENDED%} come check us out",
+      "shortsTemplate": null,
+      "liveTemplate": null,
+      "shortsSuffix": " ⚡ (#Shorts)",
+      "liveSuffix": " 🔴 (Live/Premiere)",
+      "customKeywordRules": [
+        {
+          "keyword": "giveaway",
+          "suffix": " 🎁 Don't miss the giveaway!"
+        }
+      ],
+      "extendedRules": [
+        {
+          "match": "this week",
+          "text": "\n📚 This week's playlist: {%VAR_PLAYLIST_URL%}",
+          "playlistId": "PLxxxxxxxxxxxxxxxxxxxxxx"
+        },
+        {
+          "match": "new stuff",
+          "text": "\n✨ New stuff playlist: {%VAR_PLAYLIST_URL%}",
+          "playlistId": "PLyyyyyyyyyyyyyyyyyyyyyy"
+        }
       ]
     },
     {
@@ -45,6 +99,36 @@
       "youtubeChannelId": "UCp1qY8aM7kY9bOlJ70eEArg",
       "targetGroupJids": [
         "120363000000000000@g.us"
+      ],
+      "checkIntervalMinutes": 15,
+      "maxVideosPerDay": 5,
+      "preferredKeywords": [],
+      "excludeKeywords": [],
+      "digest": { "enabled": false, "hour": 8, "separator": "\n\n" },
+      "sendOrder": "unsent",
+      "latestCount": 3,
+      "messageTemplate": "Rabbi Ovadya  MSG {%VAR_URL%}{%VAR_EXTENDED%} JOIN US ON!!!!!!!",
+      "shortsTemplate": null,
+      "liveTemplate": null,
+      "shortsSuffix": " ⚡ (#Shorts)",
+      "liveSuffix": " 🔴 (Live/Premiere)",
+      "customKeywordRules": [
+        {
+          "keyword": "giveaway",
+          "suffix": " 🎁 Don't miss the giveaway!"
+        }
+      ],
+      "extendedRules": [
+        {
+          "match": "פרשת השבוע",
+          "text": "\n📚 פרשת השבוע: {%VAR_PLAYLIST_URL%}",
+          "playlistId": "PLfAjyjKqHSHo"
+        },
+        {
+          "match": "new stuff",
+          "text": "\n✨ New stuff playlist: {%VAR_PLAYLIST_URL%}",
+          "playlistId": "PLyyyyyyyyyyyyyyyyyyyyyy"
+        }
       ]
     }
   ]

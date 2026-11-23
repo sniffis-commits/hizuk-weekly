@@ -1,7 +1,15 @@
 node_modules/
+node_modules.zip
 .wwebjs_auth/
 .wwebjs_cache/
 .puppeteer-cache/
 __pycache__/
+Python/__pycache__/
 posted_videos.json
+daily_counts.json
+digest_queue.json
+bot.log
+bot.log.1
 test_posted_videos.json
+test_daily_counts.json
+_selftest_*.json

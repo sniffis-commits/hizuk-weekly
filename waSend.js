@@ -1,4 +1,4 @@
-// One-shot WhatsApp test sender, driven by testWhatsapp.py.
+// One-shot WhatsApp test sender, driven by testWhatsapp.js / testWhatsapp.py.
 // Uses the same Client + LocalAuth + project-local Chrome as index.js.
 //
 // Usage: node waSend.js "<targetJid>" "<message>"

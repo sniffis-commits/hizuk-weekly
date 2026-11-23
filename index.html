@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="החיזוק השבועי — סרטוני תורה קצרים מרבנים שונים, כל יום, ישירות לוואטסאפ." />
+  <meta name="theme-color" content="#0f2f2a" />
+  <title>החיזוק השבועי | תורה קצרה, כל יום</title>
+  <style>
+    :root {
+      --ink: #10231f;
+      --muted: #5d6f69;
+      --paper: #fbf8f0;
+      --card: #ffffff;
+      --green: #0f6b52;
+      --green-deep: #0a3f31;
+      --gold: #c99a3c;
+      --line: #e6e0d2;
+      --shadow: 0 14px 40px rgba(16, 35, 31, .10);
+      --radius: 20px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Noto Sans Hebrew", "Arial", sans-serif;
+      color: var(--ink);
+      background: var(--paper);
+      line-height: 1.75;
+    }
+    a { color: inherit; }
+    .container { width: min(1100px, 92%); margin: 0 auto; }
+    .site-header {
+      position: sticky; top: 0; z-index: 10;
+      background: rgba(251, 248, 240, .92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .9rem 0; }
+    .brand { display: flex; align-items: center; gap: .65rem; text-decoration: none; font-weight: 800; font-size: 1.15rem; }
+    .brand-mark {
+      width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px;
+      background: linear-gradient(145deg, var(--green), var(--green-deep)); color: #fff;
+      font-size: 1.25rem; box-shadow: 0 6px 16px rgba(15, 107, 82, .28);
+    }
+    .brand small { display: block; font-size: .72rem; font-weight: 500; color: var(--muted); line-height: 1; }
+    .nav-links { display: flex; gap: 1.2rem; align-items: center; flex-wrap: wrap; }
+    .nav-links a { text-decoration: none; font-size: .92rem; color: var(--muted); }
+    .nav-links a:hover { color: var(--green); }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+      padding: .75rem 1.25rem; border-radius: 999px; text-decoration: none;
+      font-weight: 700; font-size: .95rem; transition: transform .2s, box-shadow .2s;
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn-primary { background: var(--green); color: #fff; box-shadow: 0 8px 22px rgba(15, 107, 82, .25); }
+    .btn-ghost { background: #fff; color: var(--green-deep); border: 1px solid var(--line); }
+    .hero {
+      background:
+        radial-gradient(circle at 85% 10%, rgba(201, 154, 60, .18), transparent 35%),
+        linear-gradient(160deg, #0d3b2f 0%, #0a2b22 60%, #071e18 100%);
+      color: #fff; padding: 5.5rem 0 6rem; position: relative; overflow: hidden;
+    }
+    .hero::after {
+      content: "✦"; position: absolute; left: 6%; top: 22%; font-size: 14rem;
+      color: rgba(255, 255, 255, .035); transform: rotate(12deg); pointer-events: none;
+    }
+    .hero-inner { position: relative; z-index: 1; display: grid; grid-template-columns: 1.3fr .7fr; gap: 3rem; align-items: center; }
+    .kicker {
+      display: inline-flex; align-items: center; gap: .5rem; padding: .35rem .9rem;
+      border: 1px solid rgba(255, 255, 255, .25); border-radius: 999px;
+      font-size: .85rem; color: #f4e6c6; margin-bottom: 1.2rem;
+    }
+    .pulse { width: 8px; height: 8px; border-radius: 50%; background: #7fe0b0; box-shadow: 0 0 0 6px rgba(127, 224, 176, .14); }
+    h1 { font-size: clamp(2.3rem, 5vw, 3.8rem); line-height: 1.2; margin: 0 0 1rem; letter-spacing: -.02em; }
+    h1 span { color: #f0cd82; }
+    .hero p.lead { font-size: 1.15rem; color: #d6e4dd; max-width: 44ch; margin: 0 0 2rem; }
+    .hero-actions { display: flex; gap: .8rem; flex-wrap: wrap; }
+    .hero-actions .btn-ghost { background: transparent; color: #fff; border-color: rgba(255, 255, 255, .35); }
+    .hero-note { margin-top: 1.2rem; font-size: .85rem; color: #a9c2b8; }
+    .phone {
+      background: rgba(255, 255, 255, .07); border: 1px solid rgba(255, 255, 255, .16);
+      border-radius: 34px; padding: 1.2rem; box-shadow: var(--shadow);
+    }
+    .phone-screen { background: #e8eee9; border-radius: 24px; padding: 1rem; color: var(--ink); }
+    .chat-bubble { background: #fff; border-radius: 16px 16px 16px 4px; padding: .8rem 1rem; margin-bottom: .8rem; box-shadow: 0 3px 10px rgba(0,0,0,.06); font-size: .9rem; }
+    .chat-bubble strong { color: var(--green); }
+    .chat-bubble.time { margin-inline-start: 3rem; background: #dff3e9; border-radius: 16px 16px 4px 16px; font-size: .82rem; color: var(--muted); }
+    .badges { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: 2.5rem; }
+    .badge { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.16); border-radius: 12px; padding: .7rem 1rem; font-size: .85rem; }
+    .badge b { display: block; font-size: 1.3rem; color: #f0cd82; }
+    section { padding: 4.5rem 0; }
+    .section-head { max-width: 640px; margin-bottom: 2.5rem; }
+    .eyebrow { color: var(--gold); font-weight: 800; font-size: .82rem; letter-spacing: .08em; }
+    h2 { font-size: clamp(1.8rem, 3.5vw, 2.6rem); line-height: 1.25; margin: .4rem 0 .8rem; }
+    .section-head p { color: var(--muted); margin: 0; }
+    .grid { display: grid; gap: 1.2rem; }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .card {
+      background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+      padding: 1.6rem; box-shadow: var(--shadow);
+    }
+    .step-num {
+      width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center;
+      background: #e7f4ee; color: var(--green); font-weight: 800; margin-bottom: 1rem;
+    }
+    .card h3 { margin: 0 0 .5rem; font-size: 1.2rem; }
+    .card p { color: var(--muted); margin: 0; font-size: .95rem; }
+    .video-card { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+    .thumb {
+      height: 150px; display: grid; place-items: center; color: #fff; font-size: 2.4rem;
+      background: linear-gradient(135deg, var(--green), var(--green-deep)); position: relative;
+    }
+    .thumb.gold { background: linear-gradient(135deg, #b8862f, #7d5716); }
+    .thumb.blue { background: linear-gradient(135deg, #2f6f8f, #1b4257); }
+    .thumb .tag {
+      position: absolute; bottom: .6rem; right: .6rem; font-size: .72rem;
+      background: rgba(0,0,0,.35); padding: .2rem .55rem; border-radius: 8px;
+    }
+    .video-body { padding: 1.1rem 1.2rem 1.3rem; }
+    .video-body h3 { margin: 0 0 .35rem; font-size: 1.05rem; }
+    .video-body p { font-size: .85rem; color: var(--muted); margin: 0 0 .8rem; }
+    .video-body a { font-size: .85rem; color: var(--green); font-weight: 700; text-decoration: none; }
+    .rabbis { background: #fff; border-block: 1px solid var(--line); }
+    .rabbi { display: flex; gap: 1rem; align-items: center; }
+    .avatar {
+      width: 56px; height: 56px; flex: 0 0 56px; border-radius: 50%;
+      display: grid; place-items: center; background: #e7f4ee; color: var(--green);
+      font-size: 1.4rem; font-weight: 800;
+    }
+    .rabbi h3 { margin: 0; font-size: 1.05rem; }
+    .rabbi p { margin: .15rem 0 0; font-size: .85rem; color: var(--muted); }
+    .cta { text-align: center; background: linear-gradient(160deg, #f3efe3, #e9f2ec); border-radius: 28px; padding: 3rem 1.5rem; }
+    .cta h2 { margin-bottom: .6rem; }
+    .cta p { color: var(--muted); max-width: 52ch; margin: 0 auto 1.6rem; }
+    footer { background: var(--green-deep); color: #cfe0d8; padding: 2rem 0; font-size: .88rem; }
+    .footer-inner { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; align-items: center; }
+    footer a { color: #f0cd82; text-decoration: none; }
+    @media (max-width: 820px) {
+      .hero-inner, .grid-3, .grid-2 { grid-template-columns: 1fr; }
+      .hero { padding: 3.5rem 0 4rem; }
+      .phone { max-width: 380px; }
+      .nav-links a:not(.btn) { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav">
+      <a class="brand" href="#top">
+        <span class="brand-mark" aria-hidden="true">✦</span>
+        <span>החיזוק השבועי<small>תורה קצרה, כל יום</small></span>
+      </a>
+      <nav class="nav-links" aria-label="ניווט ראשי">
+        <a href="#about">על הפרויקט</a>
+        <a href="#how">איך זה עובד</a>
+        <a href="#rabbis">הרבנים</a>
+        <a class="btn btn-primary" href="#join">הצטרפו עכשיו</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="container hero-inner">
+        <div>
+          <span class="kicker"><span class="pulse" aria-hidden="true"></span> שיעור יומי קצר · נשלח אליכם</span>
+          <h1>דקות ספורות של תורה.<br /><span>חיזוק שמחזיק את כל היום.</span></h1>
+          <p class="lead">
+            סרטונים קצרים מתוך ערוצי הרבנים — נבחרים, מסודרים ונשלחים אליכם
+            ישירות לוואטסאפ, בבוקר, בלי לחפש ובלי לברוח מהזמן.
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#join">הצטרפו לקבוצה ←</a>
+            <a class="btn btn-ghost" href="#how">איך זה עובד?</a>
+          </div>
+          <div class="badges" aria-label="נתוני הפרויקט">
+            <div class="badge"><b>3</b> ערוצי רבנים</div>
+            <div class="badge"><b>יומי</b> תדרוך תורה</div>
+            <div class="badge"><b>קצר</b> סרטונים ממוקדים</div>
+          </div>
+        </div>
+        <div class="phone" aria-hidden="true">
+          <div class="phone-screen">
+            <div class="chat-bubble"><strong>החיזוק השבועי</strong><br />📿 שיעור היום: סוד הצדיק — סרטון קצר מר' אורי חנניה אלנקוה</div>
+            <div class="chat-bubble">🎥 סרטון נוסף מאת הרב עובדיה יוסף — פרשת השבוע</div>
+            <div class="chat-bubble time">נשלח היום ב־08:00 · רק מהחדש</div>
+            <div class="chat-bubble time">בלי כפילויות. בלי ספאם. רק תורה.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="about">
+      <div class="container">
+        <div class="section-head">
+          <span class="eyebrow">על הפרויקט</span>
+          <h2>ללמוד תורה גם ביום עמוס</h2>
+          <p>
+            "החיזוק השבועי" הוא קבוצת וואטסאפ ששולחת מדי יום מבחר קצר מתוך ערוצי
+            תורה פופולריים ביוטיוב. המטרה פשוטה: לתת נקודת חיזוק אחת, ברורה וזמינה —
+            גם כשאין זמן לשיעור ארוך.
+          </p>
+        </div>
+        <div class="grid grid-3">
+          <article class="card">
+            <div class="step-num">1</div>
+            <h3>רק מהחדש</h3>
+            <p>הבוט בודק את הערוצים באופן קבוע ושולח רק סרטונים שטרם פורסמו בקבוצה — בלי חזרות.</p>
+          </article>
+          <article class="card">
+            <div class="step-num">2</div>
+            <h3>אצלכם בוואטסאפ</h3>
+            <p>השיעורים מגיעים ישירות לקבוצה, בזמן שנוח לכם לקרוא — בבוקר או לאורך היום.</p>
+          </article>
+          <article class="card">
+            <div class="step-num">3</div>
+            <h3>מגוון רבנים</h3>
+            <p>שילוב של דרשות, פרשת השבוע וסרטוני חיזוק קצרים ממספר רבנים — לטעם של כולם.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="how">
+      <div class="container">
+        <div class="section-head">
+          <span class="eyebrow">איך זה עובד</span>
+          <h2>מהסרטון לטלפון שלכם</h2>
+          <p>הכל אוטומטי, אבל עם עין אנושית על הקצב והתוכן.</p>
+        </div>
+        <div class="grid grid-3">
+          <article class="card"><div class="step-num">①</div><h3>מעקב אחר ערוצים</h3><p>הבוט עוקב אחרי ערוצי הרבנים ומזהה סרטונים חדשים בזמן אמת.</p></article>
+          <article class="card"><div class="step-num">②</div><h3>סינון ובחירה</h3><p>אפשר לבחור רק סרטוני פרשת השבוע, או לסנן מילים מסוימות — לפי הגדרת הקבוצה.</p></article>
+          <article class="card"><div class="step-num">③</div><h3>שליחה מבוקרת</h3><p>הודעות נשלחות בהפסקות טבעיות, עם הגבלה יומית, כדי שיהיה חיזוק — לא הצפה.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="samples">
+      <div class="container">
+        <div class="section-head">
+          <span class="eyebrow">דוגמאות</span>
+          <h2>ככה זה נראה אצלכם בקבוצה</h2>
+          <p>דוגמאות להודעות בסגנון שנשלח — עם קישור ישיר לסרטון המקורי ביוטיוב.</p>
+        </div>
+        <div class="grid grid-3">
+          <article class="card video-card">
+            <div class="thumb" aria-hidden="true">▶<span class="tag">סרטון קצר</span></div>
+            <div class="video-body">
+              <h3>סוד הצדיק — חיזוק קצר</h3>
+              <p>מתוך ערוץ הרב אורי חנניה אלנקוה</p>
+              <a href="https://www.youtube.com/@RabbiUriHananiaElnekave" target="_blank" rel="noopener">לערוץ ביוטיוב ↗</a>
+            </div>
+          </article>
+          <article class="card video-card">
+            <div class="thumb gold" aria-hidden="true">📖<span class="tag">פרשת השבוע</span></div>
+            <div class="video-body">
+              <h3>פרשת השבוע — צדיק תמים מגן על דורו</h3>
+              <p>מתוך ערוץ הרב עובדיה יוסף</p>
+              <a href="https://www.youtube.com/@RabbiOvadyaYosef" target="_blank" rel="noopener">לערוץ ביוטיוב ↗</a>
+            </div>
+          </article>
+          <article class="card video-card">
+            <div class="thumb blue" aria-hidden="true">✨<span class="tag">חיזוק יומי</span></div>
+            <div class="video-body">
+              <h3>דקה של תורה לפני שמתחילים את היום</h3>
+              <p>מבחר יומי מהערוצים שנעקבים אחריהם</p>
+              <a href="#join">לקבלת ההודעות בקבוצה →</a>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="rabbis" class="rabbis">
+      <div class="container">
+        <div class="section-head">
+          <span class="eyebrow">הערוצים במערכת</span>
+          <h2>ממנים שמשהו טוב</h2>
+          <p>הרשימה ניתנת להרחבה — אפשר להוסיף ערוץ נוסף בכל עת.</p>
+        </div>
+        <div class="grid grid-2">
+          <article class="card rabbi">
+            <div class="avatar" aria-hidden="true">א</div>
+            <div>
+              <h3>הרב אורי חנניה אלנקוה</h3>
+              <p>דרשות וסודות התורה — סרטונים קצרים וממוקדים.</p>
+              <a href="https://www.youtube.com/@RabbiUriHananiaElnekave" target="_blank" rel="noopener" style="color:var(--green);font-size:.85rem;font-weight:700;text-decoration:none;">צפו בערוץ ↗</a>
+            </div>
+          </article>
+          <article class="card rabbi">
+            <div class="avatar" aria-hidden="true">ע</div>
+            <div>
+              <h3>הרב עובדיה יוסף</h3>
+              <p>פרשת השבוע ושיעורים קלאסיים בקצרה ובבהירות.</p>
+              <a href="https://www.youtube.com/@RabbiOvadyaYosef" target="_blank" rel="noopener" style="color:var(--green);font-size:.85rem;font-weight:700;text-decoration:none;">צפו בערוץ ↗</a>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="join">
+      <div class="container">
+        <div class="cta">
+          <span class="eyebrow">הצטרפו</span>
+          <h2>תנו ליום להתחיל עם חיזוק</h2>
+          <p>הצטרפו לקבוצת הוואטסאפ ותקבלו את מבחר הסרטונים הקצרים ישירות לטלפון. ללא עלות, ללא ספאם.</p>
+          <a class="btn btn-primary" href="https://chat.whatsapp.com/REPLACE_WITH_GROUP_INVITE" target="_blank" rel="noopener">הצטרפו לקבוצה בוואטסאפ ←</a>
+          <p style="margin-top:1rem;font-size:.8rem;">אין לכם קישור? כתבו לנו ונשלח הזמנה.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container footer-inner">
+      <span>© <span id="year">2026</span> החיזוק השבועי · נבנה מתוך אהבה לתורה ולטכנולוגיה.</span>
+      <span><a href="#top">חזרה למעלה ↑</a></span>
+    </div>
+  </footer>
+  <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>

@@ -10,22 +10,21 @@
 
 const fs = require('fs');
 const path = require('path');
-const Parser = require('rss-parser');
-const { formatMessage, getVideoId, feedUrlFor, buildVideoData, loadPosted, savePosted } = require('./index.js');
+const { formatMessage, getVideoId, buildVideoData, loadPosted, savePosted, selectVideosToSend, loadDailyCounts, saveDailyCounts, canSendToday, recordSend, typingDelayMs, resolveHumanTiming, fetchChannelItems, isQuietTime } = require('./index.js');
 
 const BASE = __dirname;
 const CONFIG_PATH = path.join(BASE, 'config.json');
 const TEST_POSTED_PATH = path.join(BASE, 'test_posted_videos.json'); // PoC-only cache, safe to delete
-
-const parser = new Parser();
+const TEST_DAILY_PATH = path.join(BASE, 'test_daily_counts.json'); // PoC-only daily counts, safe to delete
 
 function loadConfig() {
   return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
 }
 
 /** DEBUG stand-in for client.sendMessage() — prints, sends nothing. */
-function debugSend(targetJid, message) {
-  console.log(`[DEBUG SEND -> ${targetJid}]`);
+function debugSend(targetJid, message, timing) {
+  const wait = timing ? typingDelayMs(message, timing) : 0;
+  console.log(`[DEBUG SEND -> ${targetJid}]${wait ? ` (human typing delay ${(wait / 1000).toFixed(1)}s)` : ''}`);
   console.log(message);
   console.log('-'.repeat(60));
 }
@@ -33,12 +32,14 @@ function debugSend(targetJid, message) {
 async function main() {
   const argv = process.argv.slice(2);
   if (argv.includes('--reset')) {
-    try {
-      fs.unlinkSync(TEST_POSTED_PATH);
-      console.log('(cache test_posted_videos.json deleted — next run sends everything again)');
-    } catch (err) {
-      if (err.code !== 'ENOENT') throw err;
-      console.log('(no cache test_posted_videos.json to delete)');
+    for (const f of [TEST_POSTED_PATH, TEST_DAILY_PATH]) {
+      try {
+        fs.unlinkSync(f);
+        console.log(`(cache ${path.basename(f)} deleted — next run sends everything again)`);
+      } catch (err) {
+        if (err.code !== 'ENOENT') throw err;
+        console.log(`(no cache ${path.basename(f)} to delete)`);
+      }
     }
     if (argv.filter((a) => a !== '--reset').length === 0) return;
   }
@@ -52,22 +53,30 @@ async function main() {
 
   const config = loadConfig();
   const posted = loadPosted(TEST_POSTED_PATH);
+  const daily = loadDailyCounts(TEST_DAILY_PATH);
 
   for (const channel of config.channels) {
     const cid = channel.youtubeChannelId;
     const name = channel.channelName || cid;
     console.log(`=== ${name} (${cid}) ===`);
 
+    if (isQuietTime(channel, config)) {
+      console.log(`[${name}] Quiet hours — skipping (PoC simulation).`);
+      continue;
+    }
+
     let feed;
+    let videos;
     try {
-      feed = await parser.parseURL(feedUrlFor(cid));
+      const res = await fetchChannelItems(channel, { author: name });
+      feed = res.feed || { title: name };
+      videos = res.items.slice(0, limit);
+      if (res.source !== 'rss') console.log(`[${name}] Feed source: ${res.source}.`);
     } catch (err) {
       // One channel failing must not stop the rest.
       console.log(`!! feed fetch failed: ${err.message}`);
       continue;
     }
-
-    const videos = (feed.items || []).slice(0, limit);
     if (videos.length === 0) {
       console.log('(feed empty)');
       continue;
@@ -75,21 +84,38 @@ async function main() {
 
     if (!Array.isArray(posted[cid])) posted[cid] = [];
     const seen = new Set(posted[cid]);
-    const fresh = videos.filter((item) => !seen.has(getVideoId(item)));
-    if (fresh.length === 0) {
+    const freshNewestFirst = videos
+      .filter((item) => !seen.has(getVideoId(item)))
+      .map((item) => ({ item, videoData: buildVideoData(item, feed, channel) }));
+    if (freshNewestFirst.length === 0) {
       console.log(`NOTICE: latest ${videos.length} video(s) already sent — nothing new.`);
       continue;
     }
 
-    for (const item of [...fresh].reverse()) { // oldest-first, like the bot
-      const videoData = buildVideoData(item, feed, channel);
-      const message = formatMessage(config.messageTemplate, videoData, config);
-      for (const jid of channel.targetGroupJids) {
-        debugSend(jid, message);
+    const { send, skip } = selectVideosToSend(freshNewestFirst, channel);
+    if (skip.length > 0) {
+      for (const entry of skip) seen.add(entry.videoData.id);
+      posted[cid] = [...seen];
+      savePosted(posted, TEST_POSTED_PATH);
+      console.log(`[${name}] Skipped ${skip.length} non-preferred video(s).`);
+    }
+    console.log(`[${name}] Sending ${send.length} of ${freshNewestFirst.length} new video(s) (order: ${channel.sendOrder || 'unsent'}).`);
+
+    for (const { videoData } of send) {
+      if (!canSendToday(channel, daily)) {
+        console.log(`[${name}] Daily cap reached (${channel.maxVideosPerDay}/day) — stopping.`);
+        break;
       }
-      // Record even though the send was only pretend (bot's own saver).
+      const message = formatMessage(channel, videoData);
+      const timing = resolveHumanTiming(channel, config);
+      for (const jid of channel.targetGroupJids) {
+        debugSend(jid, message, timing);
+      }
+      // Record even though the send was only pretend (bot's own savers).
       posted[cid].push(videoData.id);
       savePosted(posted, TEST_POSTED_PATH);
+      recordSend(cid, daily);
+      saveDailyCounts(daily, TEST_DAILY_PATH);
     }
   }
 }

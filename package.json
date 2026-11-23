@@ -1,11 +1,13 @@
 {
   "name": "whatsapp-yt-monitor",
   "version": "1.0.0",
-  "description": "Monitors YouTube channels via RSS and broadcasts new videos to WhatsApp groups.",
+  "description": "Monitors YouTube channels and broadcasts new videos to WhatsApp groups.",
   "main": "index.js",
   "type": "commonjs",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "dry-run": "node index.js --dry-run",
+    "test": "node --test selftest.js"
   },
   "dependencies": {
     "qrcode-terminal": "^0.12.0",
